@@ -24,17 +24,17 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="get_drawing_info",
             description="Get information about the current AutoCAD drawing including layers",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="list_documents",
             description="List all open AutoCAD drawings (name, path, active flag)",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="set_active_document",
             description="Bind the server to a specific open drawing by name (get names from list_documents)",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "name": {
@@ -48,7 +48,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="get_entities",
             description="Get list of ALL entities in the current drawing with their properties and layer information",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "max_entities": {
@@ -63,7 +63,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_structure",
             description="Create a structured building element (wall, door, window, room) with automatic layer assignment and labeling",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "structure_type": {
@@ -111,7 +111,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_or_get_layer",
             description="Create a new layer or get existing layer with specified properties",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "layer_name": {"type": "string", "description": "Name of the layer"},
@@ -128,7 +128,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="set_current_layer",
             description="Set the current active layer",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "layer_name": {
@@ -142,7 +142,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_line",
             description="Create a line in AutoCAD with optional color and thickness",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "start": {
@@ -172,7 +172,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_circle",
             description="Create a circle in AutoCAD with optional color and thickness",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "center": {
@@ -198,7 +198,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_rectangle",
             description="Create a rectangle in AutoCAD with optional color and thickness",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "corner1": {
@@ -228,7 +228,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_polyline",
             description="Create a 2D polyline in AutoCAD from a list of points, optionally closed, with optional width",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "points": {
@@ -258,7 +258,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_text",
             description="Create text in AutoCAD with optional color",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "position": {
@@ -280,7 +280,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="create_arc",
             description="Create an arc in AutoCAD with optional color and thickness",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "center": {
@@ -311,7 +311,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entity_by_handle",
             description="Delete a specific entity by its handle (get handle from get_entities)",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "handle": {"type": "string", "description": "Entity handle to delete"}
@@ -322,7 +322,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entities_by_handles",
             description="Delete multiple entities by their handles",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "handles": {
@@ -337,7 +337,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entities_by_type",
             description="Delete all entities of a specific type (e.g., 'AcDbLine', 'AcDbCircle', 'AcDbText', 'AcDbArc')",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "entity_type": {
@@ -351,7 +351,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entities_by_layer",
             description="Delete all entities on a specific layer",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "layer_name": {
@@ -365,7 +365,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entities_by_color",
             description="Delete all entities with a specific color",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "color": {
@@ -379,7 +379,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_entities_by_type_and_color",
             description="Delete entities of a specific type AND color (e.g., only green text, only red lines)",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "entity_type": {
@@ -397,7 +397,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_last_entities",
             description="Delete the last N entities created (most recent entities)",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "count": {
@@ -413,7 +413,7 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="delete_all_entities",
             description="Delete ALL entities in the drawing (requires confirmation)",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "confirm": {
@@ -428,12 +428,12 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="undo_last_operation",
             description="Undo the last operation in AutoCAD (equivalent to Ctrl+Z)",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="change_entity_color",
             description="Change the color of an existing entity by its handle",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "handle": {
@@ -451,32 +451,32 @@ def list_tool_schemas() -> list[types.Tool]:
         types.Tool(
             name="zoom_extents",
             description="Zoom to show all objects in the drawing",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="health_check",
             description="Devuelve el estado OK/ERROR de la conexion con AutoCAD antes de operaciones criticas",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="get_metrics",
             description="Expone contadores de llamadas, latencia media y errores del servidor MCP",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="clear_cache",
             description="Fuerza el refresco de la cache TTL de get_entities y get_drawing_info",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="reload_config",
             description="Recarga la configuracion desde variables de entorno y .env",
-            inputSchema={"type": "object", "properties": {}, "required": []},
+            input_schema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
             name="batch_execute",
             description="Agrupa varias operaciones de AutoCAD en una sola pasada por ModelSpace",
-            inputSchema={
+            input_schema={
                 "type": "object",
                 "properties": {
                     "operations": {

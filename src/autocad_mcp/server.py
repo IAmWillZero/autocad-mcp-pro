@@ -1,4 +1,7 @@
-"""Servidor MCP delgado: cablea el servicio CAD con el transporte stdio."""
+"""Servidor MCP delgado: cablea el servicio CAD con el transporte stdio.
+
+Implementado sobre la API v2 del SDK ``mcp`` (handlers ``on_*`` en el constructor).
+"""
 
 from __future__ import annotations
 
@@ -8,9 +11,14 @@ import time
 from typing import Any
 
 import mcp.server.stdio
-import mcp.types as types
-from mcp.server import NotificationOptions, Server
-from mcp.server.models import InitializationOptions
+from mcp.server import Server, ServerRequestContext
+from mcp.types import (
+    CallToolRequestParams,
+    CallToolResult,
+    ListToolsResult,
+    PaginatedRequestParams,
+    TextContent,
+)
 
 from autocad_mcp import __version__
 from autocad_mcp.config import get_config
@@ -26,36 +34,50 @@ class AutoCADMCPServer:
 
     def __init__(self, service: AutoCADService | None = None) -> None:
         self.service = service or AutoCADService()
-        self.server = Server(SERVER_NAME)
         self.handlers = build_handlers(self.service)
+        self.server: Server[Any] = Server(
+            SERVER_NAME,
+            version=__version__,
+            on_list_tools=self._handle_list_tools,
+            on_call_tool=self._handle_call_tool,
+        )
 
-    def setup_tools(self) -> None:
-        """Registra list_tools y call_tool en el servidor MCP."""
+    async def _handle_list_tools(
+        self,
+        ctx: ServerRequestContext[Any],
+        params: PaginatedRequestParams | None,
+    ) -> ListToolsResult:
+        return ListToolsResult(tools=list_tool_schemas())
 
-        @self.server.list_tools()
-        async def handle_list_tools() -> list[types.Tool]:
-            return list_tool_schemas()
-
-        @self.server.call_tool()
-        async def handle_call_tool(name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
-            start = time.perf_counter()
-            try:
-                handler = self.handlers.get(name)
-                if handler is None:
-                    result: dict[str, Any] = {"error": f"Unknown tool: {name}"}
-                else:
-                    result = handler(arguments or {})
-                self.service.metrics.record_call(time.perf_counter() - start)
-                return [types.TextContent(type="text", text=json.dumps(result, indent=2))]
-            except Exception as exc:  # noqa: BLE001
-                self.service.metrics.record_error()
-                log.error("tool_call_failed", tool=name, error=str(exc))
-                return [
-                    types.TextContent(
+    async def _handle_call_tool(
+        self, ctx: ServerRequestContext[Any], params: CallToolRequestParams
+    ) -> CallToolResult:
+        name = params.name
+        arguments = params.arguments or {}
+        start = time.perf_counter()
+        try:
+            handler = self.handlers.get(name)
+            if handler is None:
+                result: dict[str, Any] = {"error": f"Unknown tool: {name}"}
+            else:
+                result = handler(arguments)
+            self.service.metrics.record_call(time.perf_counter() - start)
+            return CallToolResult(
+                content=[TextContent(type="text", text=json.dumps(result, indent=2))],
+                is_error=False,
+            )
+        except Exception as exc:  # noqa: BLE001
+            self.service.metrics.record_error()
+            log.error("tool_call_failed", tool=name, error=str(exc))
+            return CallToolResult(
+                content=[
+                    TextContent(
                         type="text",
                         text=json.dumps({"error": f"Error calling tool {name}: {exc}"}),
                     )
-                ]
+                ],
+                is_error=True,
+            )
 
     async def serve(self) -> None:
         """Arranca el bucle stdio del servidor MCP."""
@@ -63,14 +85,7 @@ class AutoCADMCPServer:
             await self.server.run(
                 read_stream,
                 write_stream,
-                InitializationOptions(
-                    server_name=SERVER_NAME,
-                    server_version=__version__,
-                    capabilities=self.server.get_capabilities(
-                        notification_options=NotificationOptions(),
-                        experimental_capabilities={},
-                    ),
-                ),
+                self.server.create_initialization_options(),
             )
 
 
@@ -83,7 +98,6 @@ async def main() -> None:
         log.warning("initial_connection_failed", hint="AutoCAD debe estar abierto")
 
     server = AutoCADMCPServer(service)
-    server.setup_tools()
     await server.serve()
 
 

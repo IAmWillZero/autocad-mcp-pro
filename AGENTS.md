@@ -9,7 +9,7 @@ Reglas para todo agente/modelo que trabaje sobre **autocad-mcp-pro**. Derivado d
 | Capa | Herramienta |
 |---|---|
 | Lenguaje | Python 3.11+ |
-| Protocolo | SDK `mcp` (stdio) |
+| Protocolo | SDK `mcp` v2 (stdio) |
 | Automatización CAD | `pywin32`, `pythoncom` (COM, solo Windows) |
 | Empaquetado | `pyproject.toml` + setuptools (src layout) |
 | Lint + formato | `ruff` |
@@ -45,8 +45,13 @@ tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
    (campos opcionales con default). Candidato de cambio: `tests/test_tool_contract.py`.
 2. **Capa de adaptación única:** solo `connection.py` y `com.py` importan `pywin32`/`pythoncom`.
    Ningún otro módulo toca COM directo.
-3. **No romper nada:** `ruff check`, `ruff format --check`, `mypy src` y `pytest` deben pasar.
-4. **Nueva herramienta:** registrar con nombre único y documentarla aquí y en el `README.md`.
+3. **`stdout` limpio:** por stdio, `stdout` es exclusivo del JSON-RPC de MCP. Los logs van a
+   `stderr` (structlog con `PrintLoggerFactory(file=sys.stderr)`).
+4. **Nombres COM exactos:** usar el nombre tal cual lo expone el typelib. En AutoCAD 2025 la
+   propiedad de color es `entity.color` / `layer.color` (minúscula, DISPID 1280); el *late binding*
+   tolera el case, pero el *early binding* (gen_py) no.
+5. **No romper nada:** `ruff check`, `ruff format --check`, `mypy src` y `pytest` deben pasar.
+6. **Nueva herramienta:** registrar con nombre único y documentarla aquí y en el `README.md`.
 
 ## Definition of Done (cada tarea)
 

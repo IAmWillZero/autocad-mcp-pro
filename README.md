@@ -101,6 +101,12 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 - **`create_rectangle` es ahora una polilínea cerrada** (un solo objeto `AcDbPolyline`, no 4 líneas sueltas).
 - **Nueva tool `create_polyline`** (polilíneas 2D con cierre y ancho opcionales).
 - **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
+- **Compatible con el SDK `mcp` v2** (handlers `on_list_tools`/`on_call_tool` en el constructor;
+  `input_schema` en snake_case). Requiere `mcp>=2,<3`.
+- **Logs a `stderr`:** por stdio, `stdout` es exclusivo del protocolo JSON-RPC; escribir logs ahí
+  corrompía los mensajes. Ahora structlog emite por `stderr`.
+- **Color COM en minúscula (`entity.color`):** el typelib de AutoCAD 2025 expone esa propiedad en
+  minúscula (DISPID 1280); el *late binding* es case-insensitive, así que `color` funciona en todos los casos.
 
 ---
 

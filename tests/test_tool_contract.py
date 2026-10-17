@@ -50,5 +50,5 @@ def test_no_duplicate_tool_names() -> None:
 
 def test_every_tool_has_object_schema() -> None:
     for tool in list_tool_schemas():
-        assert tool.inputSchema["type"] == "object"
+        assert tool.input_schema["type"] == "object"
         assert tool.description
