@@ -126,7 +126,22 @@ class DeleteTools(FeatureBase):
             return {"error": f"Failed to delete last entities: {exc}"}
 
     def delete_all_entities(self, confirm: bool = False) -> dict[str, Any]:
-        """Elimina todas las entidades (requiere confirm=True)."""
+        """Elimina todas las entidades (requiere confirm=True) y purga lo huerfano."""
         if not confirm:
             return {"error": "Deletion not confirmed. Set confirm=true."}
-        return self._delete_with_filter(lambda _: True)
+        result = self._delete_with_filter(lambda _: True)
+        purged = self._purge()
+        result["purged"] = purged
+        result["message"] = f"Se eliminaron {result.get('deleted_count', 0)} entidades" + (
+            " y se purgo el dibujo" if purged else ""
+        )
+        return result
+
+    def _purge(self) -> bool:
+        """Purga bloques/capas/estilos sin uso (best-effort)."""
+        try:
+            for _ in range(3):
+                self.conn.doc.PurgeAll()
+            return True
+        except Exception:  # noqa: BLE001
+            return False

@@ -31,14 +31,18 @@ src/autocad_mcp/
 ├── connection.py    # conexión COM (tenacity + circuit breaker)
 ├── com.py           # helpers VARIANT
 ├── config.py / cache.py / colors.py / layers.py / obs.py
-└── features/        # geometry, structures, info, documents, delete, ops
+├── standards.py     # estándar de dibujo (capas A-, espesores, cotas, unidades)
+└── features/        # analysis, standards, grid, dimensions, blocks, geometry, structures,
+                     # info, documents, delete, ops
 tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
 ```
 
 ## Reglas de unión (inmutables)
 
 1. **Contrato MCP inmutable:** no eliminar ni renombrar herramientas MCP existentes
-   (`get_drawing_info`, `get_entities`, `create_structure`, `create_line`, `create_circle`,
+   (`get_drawing_info`, `get_entities`, `analyze_drawing`, `apply_standard`, `create_construction_grid`,
+   `create_dimension`, `list_blocks`, `insert_block`, `explode_entities`, `create_structure`,
+   `create_line`, `create_circle`,
    `create_rectangle`, `create_text`, `create_arc`, `create_polyline`, `zoom_extents`,
    `undo_last_operation`,
    `change_entity_color`, `delete_*`, `list_documents`, `set_active_document`, etc.). Los esquemas solo cambian de forma aditiva

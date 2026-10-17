@@ -8,6 +8,13 @@ from autocad_mcp.tools import list_tool_schemas
 EXPECTED_TOOLS = {
     "get_drawing_info",
     "get_entities",
+    "analyze_drawing",
+    "apply_standard",
+    "create_construction_grid",
+    "create_dimension",
+    "list_blocks",
+    "insert_block",
+    "explode_entities",
     "list_documents",
     "set_active_document",
     "create_structure",
