@@ -81,7 +81,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Info | `get_drawing_info`, `get_entities`, `health_check`, `get_metrics` |
 | Documentos | `list_documents`, `set_active_document` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |
-| Geometría | `create_line`, `create_circle`, `create_rectangle`, `create_text`, `create_arc` |
+| Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |
 | Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` |
 | Edición | `change_entity_color`, `undo_last_operation`, `zoom_extents` |
@@ -98,6 +98,9 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
   `get_drawing_info` (antes devolvía datos obsoletos hasta expirar el TTL).
 - **Menos errores silenciosos:** los fallos COM se registran en logs estructurados.
 - **`prometheus_client` realmente usado** (exporta métricas si está instalado).
+- **`create_rectangle` es ahora una polilínea cerrada** (un solo objeto `AcDbPolyline`, no 4 líneas sueltas).
+- **Nueva tool `create_polyline`** (polilíneas 2D con cierre y ancho opcionales).
+- **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
 
 ---
 

@@ -226,6 +226,36 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="create_polyline",
+            description="Create a 2D polyline in AutoCAD from a list of points, optionally closed, with optional width",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "points": {
+                        "type": "array",
+                        "description": "List of [x, y] vertices (min 2)",
+                        "items": {"type": "array", "items": {"type": "number"}},
+                    },
+                    "closed": {
+                        "type": "boolean",
+                        "description": "Close the polyline",
+                        "default": False,
+                    },
+                    "color": {
+                        "type": "string",
+                        "description": "Color name or ACI number",
+                        "default": "white",
+                    },
+                    "width": {
+                        "type": "number",
+                        "description": "Constant width of the polyline",
+                        "default": 0.0,
+                    },
+                },
+                "required": ["points"],
+            },
+        ),
+        types.Tool(
             name="create_text",
             description="Create text in AutoCAD with optional color",
             inputSchema={
@@ -512,6 +542,9 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
         ),
         "create_rectangle": lambda a: geo.create_rectangle(
             a["corner1"], a["corner2"], a.get("color", "white"), a.get("thickness", 0.0)
+        ),
+        "create_polyline": lambda a: geo.create_polyline(
+            a["points"], a.get("closed", False), a.get("color", "white"), a.get("width", 0.0)
         ),
         "create_text": lambda a: geo.create_text(
             a["position"], a["text"], a.get("height", 1.0), a.get("color", "white")

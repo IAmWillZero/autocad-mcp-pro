@@ -35,6 +35,7 @@ class AutoCADService:
             "create_line": self.geometry.create_line,
             "create_circle": self.geometry.create_circle,
             "create_rectangle": self.geometry.create_rectangle,
+            "create_polyline": self.geometry.create_polyline,
             "create_text": self.geometry.create_text,
             "create_arc": self.geometry.create_arc,
         }

@@ -39,7 +39,8 @@ tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
 
 1. **Contrato MCP inmutable:** no eliminar ni renombrar herramientas MCP existentes
    (`get_drawing_info`, `get_entities`, `create_structure`, `create_line`, `create_circle`,
-   `create_rectangle`, `create_text`, `create_arc`, `zoom_extents`, `undo_last_operation`,
+   `create_rectangle`, `create_text`, `create_arc`, `create_polyline`, `zoom_extents`,
+   `undo_last_operation`,
    `change_entity_color`, `delete_*`, `list_documents`, `set_active_document`, etc.). Los esquemas solo cambian de forma aditiva
    (campos opcionales con default). Candidato de cambio: `tests/test_tool_contract.py`.
 2. **Capa de adaptación única:** solo `connection.py` y `com.py` importan `pywin32`/`pythoncom`.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from autocad_mcp.com import variant_point
+from autocad_mcp.com import variant_array, variant_point
 from autocad_mcp.connection import AutoCADConnection, safe_operation
 from autocad_mcp.features.base import FeatureBase
 
@@ -162,6 +162,62 @@ class GeometryTools(FeatureBase):
             + (f" and thickness {thickness}" if thickness > 0 else ""),
         }
 
+    def create_polyline(
+        self,
+        points: list[list[float]],
+        closed: bool = False,
+        color: str | int = "white",
+        width: float = 0.0,
+    ) -> dict[str, Any]:
+        """Crea una polilinea 2D (AddLightWeightPolyline) con ancho opcional."""
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        if len(points) < 2:
+            return {"success": False, "error": "Polyline requires at least 2 points"}
+
+        try:
+            flat = [float(c) for p in points for c in (p[0], p[1])]
+        except (IndexError, TypeError, ValueError) as exc:
+            return {"success": False, "error": f"Invalid points: {exc}"}
+
+        def polyline_operation() -> Any:
+            poly = self.conn.model_space().AddLightWeightPolyline(variant_array(flat))
+            if closed:
+                poly.Closed = True
+            if width > 0:
+                try:
+                    poly.ConstantWidth = float(width)
+                except Exception:  # noqa: BLE001 - no soportado en algunas versiones
+                    pass
+            self.set_entity_color(poly, color)
+            self.conn.regen()
+            return poly
+
+        poly = safe_operation(polyline_operation)
+        if poly is None:
+            return {
+                "success": False,
+                "error": "Failed to create polyline",
+                "type": "AcDbPolyline",
+                "color": color,
+            }
+
+        self._invalidate()
+        return {
+            "success": True,
+            "handles": [self._handle(poly, "polyline")],
+            "handle": self._handle(poly, "polyline"),
+            "type": "AcDbPolyline",
+            "closed": closed,
+            "points_count": len(points),
+            "color": color,
+            "width": width,
+            "message": f"Polyline created with {len(points)} points"
+            + (", closed" if closed else "")
+            + (f", width {width}" if width > 0 else ""),
+        }
+
     def create_rectangle(
         self,
         corner1: list[float],
@@ -169,7 +225,7 @@ class GeometryTools(FeatureBase):
         color: str | int = "white",
         thickness: float = 0.0,
     ) -> dict[str, Any]:
-        """Crea un rectangulo como 4 lineas."""
+        """Crea un rectangulo como polilinea cerrada (objeto unico)."""
         if not self.conn.ensure():
             return {"error": "Not connected to AutoCAD"}
 
@@ -179,32 +235,22 @@ class GeometryTools(FeatureBase):
         except (IndexError, TypeError, ValueError) as exc:
             return {"success": False, "error": f"Invalid corners: {exc}"}
 
-        handles: list[str] = []
-        edges = [
-            ([x1, y1], [x2, y1]),
-            ([x2, y1], [x2, y2]),
-            ([x2, y2], [x1, y2]),
-            ([x1, y2], [x1, y1]),
-        ]
-        for start, end in edges:
-            result = self.create_line(start, end, color, thickness)
-            if not result.get("success"):
-                return {
-                    "success": False,
-                    "error": "Failed while creating rectangle edges",
-                    "handles": handles,
-                }
-            handles.extend(result.get("handles", []))
+        result = self.create_polyline(
+            [[x1, y1], [x2, y1], [x2, y2], [x1, y2]],
+            closed=True,
+            color=color,
+            width=thickness,
+        )
+        if not result.get("success"):
+            return result
 
-        return {
-            "success": True,
-            "handles": handles,
-            "type": "Rectangle" + (" with thickness" if thickness > 0 else ""),
-            "color": color,
-            "thickness": thickness,
-            "message": f"Rectangle created from ({x1},{y1}) to ({x2},{y2}) with color {color}"
-            + (f" and thickness {thickness}" if thickness > 0 else ""),
-        }
+        result["type"] = "Rectangle" + (" with thickness" if thickness > 0 else "")
+        result["thickness"] = thickness
+        result["message"] = (
+            f"Rectangle created from ({x1},{y1}) to ({x2},{y2}) with color {color}"
+            + (f" and thickness {thickness}" if thickness > 0 else "")
+        )
+        return result
 
     def create_text(
         self,

@@ -60,10 +60,15 @@ def main() -> int:
     check("create_circle success", bool(circle.get("success")))
     check("create_circle aparece", "AcDbCircle" in types_of(service))
 
-    # --- create_rectangle (4 lineas) ---
+    # --- create_rectangle (polilinea cerrada) ---
     rect = service.geometry.create_rectangle([0, 0], [20, 10], "green")
     check("create_rectangle success", bool(rect.get("success")))
-    check("create_rectangle crea 4 handles", len(rect.get("handles", [])) == 4)
+    check("create_rectangle crea 1 polilinea", len(rect.get("handles", [])) == 1)
+
+    # --- create_polyline ---
+    poly = service.geometry.create_polyline([[0, 0], [5, 0], [5, 5]], closed=True, color="yellow")
+    check("create_polyline success", bool(poly.get("success")))
+    check("create_polyline aparece", "AcDbPolyline" in types_of(service))
 
     # --- create_text ---
     text = service.geometry.create_text([1, 1], "HOLA", 1.0, "white")

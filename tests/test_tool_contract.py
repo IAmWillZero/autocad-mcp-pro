@@ -16,6 +16,7 @@ EXPECTED_TOOLS = {
     "create_line",
     "create_circle",
     "create_rectangle",
+    "create_polyline",
     "create_text",
     "create_arc",
     "delete_entity_by_handle",
