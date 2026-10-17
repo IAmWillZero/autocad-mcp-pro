@@ -52,6 +52,7 @@ src/autocad_mcp/
     ├── geometry.py    # línea, círculo, rectángulo, texto, arco
     ├── structures.py  # muros, puertas, ventanas, habitaciones, etiquetas
     ├── info.py        # get_drawing_info, get_entities
+    ├── analysis.py    # analyze_drawing: resumen, extents, cotas y anotaciones
     ├── documents.py   # list_documents, set_active_document (multi-dibujo)
     ├── delete.py      # borrado por handle/tipo/capa/color
     └── ops.py         # undo, recolor, zoom, salud, métricas, batch
@@ -78,7 +79,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 
 | Grupo | Herramientas |
 |---|---|
-| Info | `get_drawing_info`, `get_entities`, `health_check`, `get_metrics` |
+| Info | `get_drawing_info`, `get_entities`, `analyze_drawing`, `health_check`, `get_metrics` |
 | Documentos | `list_documents`, `set_active_document` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
@@ -101,6 +102,8 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 - **`create_rectangle` es ahora una polilínea cerrada** (un solo objeto `AcDbPolyline`, no 4 líneas sueltas).
 - **Nueva tool `create_polyline`** (polilíneas 2D con cierre y ancho opcionales).
 - **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
+- **Nueva tool `analyze_drawing`**: informe del dibujo (resumen por tipo/capa, extents, cotas con su
+  medida y anotaciones) para verificar que lo dibujado es correcto.
 - **Compatible con el SDK `mcp` v2** (handlers `on_list_tools`/`on_call_tool` en el constructor;
   `input_schema` en snake_case). Requiere `mcp>=2,<3`.
 - **Logs a `stderr`:** por stdio, `stdout` es exclusivo del protocolo JSON-RPC; escribir logs ahí

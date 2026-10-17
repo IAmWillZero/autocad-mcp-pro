@@ -106,6 +106,22 @@ def main() -> int:
     info = service.info.get_drawing_info()
     check("get_drawing_info", "error" not in info)
 
+    # --- analyze_drawing (informe + verificacion de cotas) ---
+    from autocad_mcp.com import variant_point
+
+    ms = service.conn.model_space()
+    ms.AddDimAligned(variant_point(0, 0), variant_point(10, 0), variant_point(5, -3))
+    report = service.analysis.analyze_drawing(include_entities=True)
+    check("analyze_drawing success", bool(report.get("success")))
+    check("analyze resumen por tipo", report["summary"]["counts_by_type"].get("AcDbLine", 0) >= 1)
+    check("analyze extents > 0", report["extents"]["width"] > 0)
+    check("analyze detecta cotas", len(report.get("dimensions", [])) >= 1)
+    check(
+        "analyze: la cota mide ~10",
+        any(abs((d.get("measurement") or 0) - 10.0) < 0.01 for d in report.get("dimensions", [])),
+    )
+    check("analyze incluye geometria", any("geometry" in e for e in report.get("entities", [])))
+
     # Limpieza final
     service.deleter.delete_all_entities(confirm=True)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from autocad_mcp.cache import TTLCache
 from autocad_mcp.config import AutoCADMCPConfig, get_config
 from autocad_mcp.connection import AutoCADConnection
+from autocad_mcp.features.analysis import AnalysisTools
 from autocad_mcp.features.delete import DeleteTools
 from autocad_mcp.features.documents import DocumentTools
 from autocad_mcp.features.geometry import GeometryTools
@@ -28,6 +29,7 @@ class AutoCADService:
         self.geometry = GeometryTools(self.conn, self.cache)
         self.structures = StructureTools(self.conn, self.cache, self.geometry, self.layer_tools)
         self.info = InfoTools(self.conn, self.cache)
+        self.analysis = AnalysisTools(self.conn, self.cache)
         self.deleter = DeleteTools(self.conn, self.cache)
         self.documents = DocumentTools(self.conn, self.cache)
 

@@ -6,6 +6,7 @@ import time
 from typing import Any
 
 from autocad_mcp.cache import TTLCache
+from autocad_mcp.com import as_dynamic
 from autocad_mcp.connection import AutoCADConnection
 from autocad_mcp.features.base import FeatureBase
 
@@ -134,7 +135,7 @@ class InfoTools(FeatureBase):
     @staticmethod
     def _read_entity(model_space: Any, index: int) -> dict[str, Any] | None:
         try:
-            entity = model_space.Item(index)
+            entity = as_dynamic(model_space.Item(index))
             info: dict[str, Any] = {
                 "index": index,
                 "type": str(entity.ObjectName),

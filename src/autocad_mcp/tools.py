@@ -61,6 +61,44 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="analyze_drawing",
+            description=(
+                "Analyze the current drawing and return a report: totals by type and layer, "
+                "drawing extents, dimensions with their measured values (to verify them) and "
+                "text annotations. Optionally include per-entity coordinates."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "include_entities": {
+                        "type": "boolean",
+                        "description": "Include the per-entity list with coordinates/geometry",
+                        "default": False,
+                    },
+                    "entity_type": {
+                        "type": "string",
+                        "description": "Only include entities whose type contains this text (e.g. 'Line')",
+                    },
+                    "layer": {
+                        "type": "string",
+                        "description": "Only include entities on this layer",
+                    },
+                    "max_entities": {
+                        "type": "integer",
+                        "description": "Max entities listed when include_entities is true (default 500)",
+                        "minimum": 1,
+                        "default": 500,
+                    },
+                    "include_geometry": {
+                        "type": "boolean",
+                        "description": "Compute geometry (start/end, center, coordinates...) per entity",
+                        "default": True,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
             name="create_structure",
             description="Create a structured building element (wall, door, window, room) with automatic layer assignment and labeling",
             input_schema={
@@ -511,6 +549,13 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
         # info
         "get_drawing_info": lambda a: service.info.get_drawing_info(),
         "get_entities": lambda a: service.info.get_entities(a.get("max_entities")),
+        "analyze_drawing": lambda a: service.analysis.analyze_drawing(
+            a.get("include_entities", False),
+            a.get("entity_type"),
+            a.get("layer"),
+            a.get("max_entities", 500),
+            a.get("include_geometry", True),
+        ),
         "list_documents": lambda a: service.documents.list_documents(),
         "set_active_document": lambda a: service.documents.set_active_document(a["name"]),
         # structures
