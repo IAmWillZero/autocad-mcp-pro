@@ -6,11 +6,15 @@ from autocad_mcp.cache import TTLCache
 from autocad_mcp.config import AutoCADMCPConfig, get_config
 from autocad_mcp.connection import AutoCADConnection
 from autocad_mcp.features.analysis import AnalysisTools
+from autocad_mcp.features.blocks import BlockTools
 from autocad_mcp.features.delete import DeleteTools
+from autocad_mcp.features.dimensions import DimensionTools
 from autocad_mcp.features.documents import DocumentTools
 from autocad_mcp.features.geometry import GeometryTools
+from autocad_mcp.features.grid import GridTools
 from autocad_mcp.features.info import InfoTools
 from autocad_mcp.features.ops import BatchTool, OpsTools
+from autocad_mcp.features.standards import StandardsTools
 from autocad_mcp.features.structures import StructureTools
 from autocad_mcp.layers import LayerTools
 from autocad_mcp.obs import Metrics
@@ -32,6 +36,10 @@ class AutoCADService:
         self.analysis = AnalysisTools(self.conn, self.cache)
         self.deleter = DeleteTools(self.conn, self.cache)
         self.documents = DocumentTools(self.conn, self.cache)
+        self.standards = StandardsTools(self.conn, self.cache)
+        self.grid = GridTools(self.conn, self.cache)
+        self.blocks = BlockTools(self.conn, self.cache)
+        self.dimensions = DimensionTools(self.conn, self.cache)
 
         batch_tools: dict[str, BatchTool] = {
             "create_line": self.geometry.create_line,

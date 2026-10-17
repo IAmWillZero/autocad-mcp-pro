@@ -48,13 +48,18 @@ src/autocad_mcp/
 ├── layers.py        # definiciones de capas + operaciones de capas
 ├── obs.py           # logging estructurado + métricas (prometheus opcional)
 ├── com.py           # helpers VARIANT de pywin32 (único punto junto a connection)
+├── standards.py     # estándar de dibujo: capas A-, espesores, estilo de cotas, unidades
 └── features/        # operaciones CAD por dominio
     ├── geometry.py    # línea, círculo, rectángulo, texto, arco
     ├── structures.py  # muros, puertas, ventanas, habitaciones, etiquetas
     ├── info.py        # get_drawing_info, get_entities
     ├── analysis.py    # analyze_drawing: resumen, extents, cotas y anotaciones
+    ├── standards.py   # apply_standard: capas A-, unidades, estilo de cotas
+    ├── grid.py        # create_construction_grid: ejes con burbujas y rótulos
+    ├── dimensions.py  # create_dimension: cotas rotadas/alineadas/radiales
+    ├── blocks.py      # list_blocks, insert_block, explode_entities
     ├── documents.py   # list_documents, set_active_document (multi-dibujo)
-    ├── delete.py      # borrado por handle/tipo/capa/color
+    ├── delete.py      # borrado por handle/tipo/capa/color (+ purge en delete_all)
     └── ops.py         # undo, recolor, zoom, salud, métricas, batch
 ```
 
@@ -81,12 +86,35 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 |---|---|
 | Info | `get_drawing_info`, `get_entities`, `analyze_drawing`, `health_check`, `get_metrics` |
 | Documentos | `list_documents`, `set_active_document` |
+| Estándar | `apply_standard` (unidades metro, capas `A-`, estilo de cotas a escala) |
+| Ejes | `create_construction_grid` (ejes numerados/letrados con burbujas) |
+| Cotas | `create_dimension` (rotada/alineada/radial/diametral) |
+| Bloques | `list_blocks`, `insert_block`, `explode_entities` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |
-| Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` |
+| Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` (+ purge) |
 | Edición | `change_entity_color`, `undo_last_operation`, `zoom_extents` |
 | Ops | `clear_cache`, `reload_config`, `batch_execute` |
+
+### Estándar de dibujo (`apply_standard`)
+
+Aplica el estándar arquitectónico del estudio: unidades en **metros** (`INSUNITS=6`, métrico) y las
+capas `A-` con color, **espesor jerárquico** y tipo de línea, más el estilo de cotas `MCP-ARQ`
+(texto 0.20 m, flecha 0.12 m — a escala real, no del zoom):
+
+| Capa | Color | Espesor | Tipo de línea |
+|---|---|---|---|
+| `A-MUROS-CARGA` | azul (5) | 0.50 mm | Continua |
+| `A-MUROS-TABIQ` | blanco (7) | 0.30 mm | Continua |
+| `A-PUER-VENT` | cian (4) | 0.25 mm | Continua |
+| `A-MOBILIARIO` | gris (8) | 0.13 mm | Continua |
+| `A-COTAS` | rojo (1) | 0.13 mm | Continua |
+| `A-EJES` | gris (9) | 0.13 mm | CENTER |
+| `A-PROYECC` | rojo (1) | 0.13 mm | HIDDEN |
+| `A-TEXTOS` | amarillo (2) | 0.13 mm | Continua |
+
+Todo se dibuja **1:1** en Model con medidas reales; las entidades nuevas quedan **ByLayer**.
 
 ---
 
@@ -104,6 +132,11 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 - **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
 - **Nueva tool `analyze_drawing`**: informe del dibujo (resumen por tipo/capa, extents, cotas con su
   medida y anotaciones) para verificar que lo dibujado es correcto.
+- **Estándar de dibujo profesional**: `apply_standard` (capas `A-` con espesores jerárquicos, unidades
+  en metros y estilo de cotas a escala), `create_construction_grid` (ejes de construcción),
+  `create_dimension` (cotas) y `list_blocks`/`insert_block`/`explode_entities` (bloques). Ver
+  *Estándar de dibujo* arriba.
+- **`delete_all_entities` purga el dibujo** (bloques/capas/estilos huérfanos) tras borrar.
 - **Compatible con el SDK `mcp` v2** (handlers `on_list_tools`/`on_call_tool` en el constructor;
   `input_schema` en snake_case). Requiere `mcp>=2,<3`.
 - **Logs a `stderr`:** por stdio, `stdout` es exclusivo del protocolo JSON-RPC; escribir logs ahí

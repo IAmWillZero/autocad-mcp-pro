@@ -122,6 +122,42 @@ def main() -> int:
     )
     check("analyze incluye geometria", any("geometry" in e for e in report.get("entities", [])))
 
+    # --- apply_standard (capas A- + unidades + estilo de cotas) ---
+    std = service.standards.apply_standard()
+    check("apply_standard success", bool(std.get("success")))
+    check("apply_standard define capas A-", "A-MUROS-CARGA" in std.get("layers", []))
+    check("apply_standard estilo de cotas", std.get("dim_style") == "MCP-ARQ")
+
+    # --- create_construction_grid ---
+    grid = service.grid.create_construction_grid([0, 5], [0, 4])
+    check("create_construction_grid success", bool(grid.get("success")))
+    check("create_construction_grid crea entidades", grid.get("entities_created", 0) > 0)
+
+    # --- create_dimension ---
+    dim = service.dimensions.create_dimension(
+        "rotated", [[0, 0], [5, 0]], [2.5, -2], layer="A-COTAS", style="MCP-ARQ"
+    )
+    check("create_dimension success", bool(dim.get("success")))
+    check("create_dimension mide ~5", abs((dim.get("measurement") or 0) - 5.0) < 0.01)
+
+    # --- bloques: definicion (COM) + list + insert + explode ---
+    doc = service.conn.doc
+    blk = doc.Blocks.Add(variant_point(0, 0), "SMOKE-BLOCK")
+    blk.AddLine(variant_point(0, 0), variant_point(1, 1))
+    listing = service.blocks.list_blocks()
+    check("list_blocks success", bool(listing.get("success")))
+    check(
+        "list_blocks incluye bloque definido",
+        any(b["name"] == "SMOKE-BLOCK" for b in listing.get("blocks", [])),
+    )
+    insertion = service.blocks.insert_block("SMOKE-BLOCK", [50, 50])
+    check("insert_block success", bool(insertion.get("success")))
+    exploded = service.blocks.explode_entities([insertion.get("handle", "")])
+    check(
+        "explode_entities success",
+        bool(exploded.get("success")) and exploded.get("exploded_count") == 1,
+    )
+
     # Limpieza final
     service.deleter.delete_all_entities(confirm=True)
 

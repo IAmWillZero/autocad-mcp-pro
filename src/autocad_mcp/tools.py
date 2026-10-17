@@ -99,6 +99,154 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="apply_standard",
+            description=(
+                "Apply the architectural drawing standard: metric units (meters), the A- layer "
+                "set with color/lineweight/linetype (A-MUROS-CARGA, A-MUROS-TABIQ, A-PUER-VENT, "
+                "A-MOBILIARIO, A-COTAS, A-EJES, A-PROYECC, A-TEXTOS) and a scaled dimension style."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "dim_text_height": {
+                        "type": "number",
+                        "description": "Dimension text height in drawing units (meters)",
+                        "default": 0.2,
+                    },
+                    "dim_arrow_size": {
+                        "type": "number",
+                        "description": "Dimension arrow size in drawing units (meters)",
+                        "default": 0.12,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
+            name="create_construction_grid",
+            description=(
+                "Draw construction axes (grid): vertical axes numbered 1..n and horizontal "
+                "axes lettered A..n, each with bubbles and a centered label at both ends."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "vertical_positions": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "X positions of vertical axes (labeled 1, 2, 3...)",
+                    },
+                    "horizontal_positions": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Y positions of horizontal axes (labeled A, B, C...)",
+                    },
+                    "bubble_radius": {"type": "number", "default": 0.45},
+                    "overshoot": {
+                        "type": "number",
+                        "description": "How far axes extend beyond the outer positions",
+                        "default": 1.0,
+                    },
+                    "text_height": {"type": "number", "default": 0.3},
+                    "layer": {"type": "string", "default": "A-EJES"},
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
+            name="create_dimension",
+            description=(
+                "Create a dimension (rotated/linear, aligned, radial or diametric) on a layer, "
+                "optionally using a named dimension style."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "dim_type": {
+                        "type": "string",
+                        "enum": ["rotated", "linear", "aligned", "radial", "diametric"],
+                    },
+                    "points": {
+                        "type": "array",
+                        "description": (
+                            "rotated/aligned: [start, end]; radial/diametric: [center, chord]"
+                        ),
+                        "items": {"type": "array", "items": {"type": "number"}},
+                    },
+                    "dim_line_point": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Location of the dimension line (rotated/aligned)",
+                    },
+                    "rotation": {
+                        "type": "number",
+                        "description": "Rotation in degrees for rotated dimensions (0=horizontal, 90=vertical)",
+                        "default": 0.0,
+                    },
+                    "leader_length": {
+                        "type": "number",
+                        "description": "Leader length for radial/diametric dimensions",
+                        "default": 1.0,
+                    },
+                    "layer": {"type": "string", "default": "A-COTAS"},
+                    "style": {
+                        "type": "string",
+                        "description": "Dimension style name (e.g. 'MCP-ARQ')",
+                    },
+                },
+                "required": ["dim_type", "points"],
+            },
+        ),
+        types.Tool(
+            name="list_blocks",
+            description="List named block definitions available in the current drawing",
+            input_schema={"type": "object", "properties": {}, "required": []},
+        ),
+        types.Tool(
+            name="insert_block",
+            description="Insert a block reference by name at a position with scale and rotation",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Block definition name"},
+                    "position": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Insertion point [x, y] or [x, y, z]",
+                    },
+                    "scale": {"type": "number", "default": 1.0},
+                    "rotation": {
+                        "type": "number",
+                        "description": "Rotation in degrees",
+                        "default": 0.0,
+                    },
+                    "layer": {
+                        "type": "string",
+                        "description": "Layer for the inserted reference (optional)",
+                    },
+                },
+                "required": ["name", "position"],
+            },
+        ),
+        types.Tool(
+            name="explode_entities",
+            description=(
+                "Explode block references (by handle) into primitive entities; the original "
+                "reference is deleted."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Handles of block references to explode",
+                    }
+                },
+                "required": ["handles"],
+            },
+        ),
+        types.Tool(
             name="create_structure",
             description="Create a structured building element (wall, door, window, room) with automatic layer assignment and labeling",
             input_schema={
@@ -558,6 +706,37 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
         ),
         "list_documents": lambda a: service.documents.list_documents(),
         "set_active_document": lambda a: service.documents.set_active_document(a["name"]),
+        # standards / axes / dimensions / blocks
+        "apply_standard": lambda a: service.standards.apply_standard(
+            a.get("dim_text_height", 0.2),
+            a.get("dim_arrow_size", 0.12),
+        ),
+        "create_construction_grid": lambda a: service.grid.create_construction_grid(
+            a.get("vertical_positions"),
+            a.get("horizontal_positions"),
+            a.get("bubble_radius", 0.45),
+            a.get("overshoot", 1.0),
+            a.get("text_height", 0.3),
+            a.get("layer", "A-EJES"),
+        ),
+        "create_dimension": lambda a: service.dimensions.create_dimension(
+            a["dim_type"],
+            a["points"],
+            a.get("dim_line_point"),
+            a.get("rotation", 0.0),
+            a.get("leader_length", 1.0),
+            a.get("layer", "A-COTAS"),
+            a.get("style"),
+        ),
+        "list_blocks": lambda a: service.blocks.list_blocks(),
+        "insert_block": lambda a: service.blocks.insert_block(
+            a["name"],
+            a["position"],
+            a.get("scale", 1.0),
+            a.get("rotation", 0.0),
+            a.get("layer"),
+        ),
+        "explode_entities": lambda a: service.blocks.explode_entities(a["handles"]),
         # structures
         "create_structure": lambda a: service.structures.create_structure(
             a["structure_type"],
