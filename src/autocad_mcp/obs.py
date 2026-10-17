@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from typing import Any
 
 import structlog
@@ -11,7 +12,11 @@ log = structlog.get_logger("autocad-mcp")
 
 
 def configure_logging(level: str = "INFO") -> None:
-    """Configura structlog con salida JSON."""
+    """Configura structlog con salida JSON.
+
+    Los logs van a **stderr**: stdio es el canal exclusivo del protocolo MCP,
+    asi que enviar cualquier texto a stdout corromperia los mensajes JSON-RPC.
+    """
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     structlog.configure(
         processors=[
@@ -20,7 +25,7 @@ def configure_logging(level: str = "INFO") -> None:
             structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(numeric_level),
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.PrintLoggerFactory(file=sys.stderr),
         cache_logger_on_first_use=True,
     )
 
