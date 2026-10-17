@@ -1,0 +1,68 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autocad-mcp-pro"
+version = "1.0.0"
+description = "MCP server for AutoCAD COM automation (Windows)"
+requires-python = ">=3.11"
+authors = [{ name = "MC. Peter Alejandro Pérez Chel" }]
+readme = "README.md"
+license = { text = "MIT" }
+keywords = ["autocad", "mcp", "model-context-protocol", "com", "pywin32"]
+dependencies = [
+    "mcp>=1.0,<2",
+    "pywin32>=306; sys_platform == 'win32'",
+    "pydantic-settings>=2.2.0",
+    "tenacity>=8.2.0",
+    "cachetools>=5.4.0",
+    "structlog>=24.2.0",
+    "prometheus_client>=0.20.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.9.0",
+    "mypy>=1.11.0",
+    "pre-commit>=3.8.0",
+]
+
+[project.scripts]
+autocad-mcp-pro = "autocad_mcp.server:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["autocad_mcp*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "C4", "UP", "PERF"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["win32com.*", "pythoncom", "pywintypes"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

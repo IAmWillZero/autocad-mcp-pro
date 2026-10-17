@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "autocad-mcp-pro": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\I Am Will\\dev\\acutocad-mcp-v2\\venv\\Scripts\\python.exe",
+        "-m",
+        "autocad_mcp"
+      ],
+      "enabled": true
+    }
+  }
+}
