@@ -79,7 +79,10 @@ class AnalysisTools(FeatureBase):
 
             by_type[desc["type"]] = by_type.get(desc["type"], 0) + 1
             by_layer[desc["layer"]] = by_layer.get(desc["layer"], 0) + 1
-            self._expand_extents(bb_min, bb_max, desc.get("bounds"))
+            # COM devuelve un bounding box no fiable para las cotas: se excluyen
+            # de los extents (su medida real si se reporta en ``dimensions``).
+            if "Dimension" not in desc["type"]:
+                self._expand_extents(bb_min, bb_max, desc.get("bounds"))
 
             if "Dimension" in desc["type"]:
                 dimensions.append(self._dimension_record(desc))
