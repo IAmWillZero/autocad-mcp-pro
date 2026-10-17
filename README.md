@@ -58,6 +58,7 @@ src/autocad_mcp/
     ├── grid.py        # create_construction_grid: ejes con burbujas y rótulos
     ├── dimensions.py  # create_dimension: cotas rotadas/alineadas/radiales
     ├── blocks.py      # list_blocks, create_block, insert_block, explode_entities
+    ├── layouts.py     # list/create/set_active layout, create_viewport, plot style table
     ├── documents.py   # list_documents, set_active_document (multi-dibujo)
     ├── delete.py      # borrado por handle/tipo/capa/color (+ purge en delete_all)
     └── ops.py         # undo, recolor, zoom, salud, métricas, batch
@@ -92,6 +93,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Bloques | `list_blocks`, `create_block` (definir desde entidades por handle), `insert_block`, `explode_entities` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas; capas `A-`/`I-` automáticas) |
 | Muros | `create_wall` (polilínea de contorno con **espesor real**, uniones a inglete) |
+| Layouts | `list_layouts`, `create_layout`, `set_active_layout`, `create_viewport` (escala 1:50 → `0.02`), `set_plot_style_table` (`acad.ctb`…) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |
 | Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` (+ purge) |
@@ -123,6 +125,23 @@ Elementos que no son arquitectónicos (MEP, terreno) usan prefijos por disciplin
 `partition`→`A-MUROS-TABIQ`, `door`/`window`→`A-PUER-VENT`, `furniture`→`A-MOBILIARIO`,
 `text`/`dimension`→`A-TEXTOS`, etc.).
 
+### Layouts y trazado
+
+El dibujo se hace **1:1 en Model**; la presentación va en **Layouts (espacio papel)**:
+
+- `create_layout(name, media, plot_style_table)` → nueva pestaña; `media` es el nombre canónico
+  del papel (p. ej. `ISO_A4_(210.00_x_297.00_MM)`).
+- `create_viewport(layout_name, center, width, height, scale, view_center)` → ventana al modelo;
+  `scale` es el factor (1:50 → `0.02`, 1:100 → `0.01`).
+- `set_active_layout(name)` / `list_layouts()` → cambiar y listar pestañas.
+- `set_plot_style_table(layout_name, table)` → asigna un `.ctb`/`.stb` **existente** (`acad.ctb`,
+  `monochrome.ctb`…).
+
+> **Nota:** el archivo `.CTB`/`.STB` es binario y AutoCAD **no lo expone por COM**. Este servidor
+> asigna el estilo de trazado y fija los **espesores de línea por capa** (que es lo que el `.CTB`
+> usa por defecto con `UseObjectLineweight`), pero crear/editar el `.CTB` se hace en AutoCAD
+> (*Page Setup Manager* → *Plot Style Table Editor*).
+
 ---
 
 ## Mejoras frente a la base original
@@ -139,6 +158,8 @@ Elementos que no son arquitectónicos (MEP, terreno) usan prefijos por disciplin
 - **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
 - **Nueva tool `analyze_drawing`**: informe del dibujo (resumen por tipo/capa, extents, cotas con su
   medida y anotaciones) para verificar que lo dibujado es correcto.
+- **Layouts/espacio papel**: `list_layouts`, `create_layout`, `set_active_layout`,
+  `create_viewport` (con escala) y `set_plot_style_table`.
 - **Nuevas tools de bloque `create_block`** (definir bloques desde entidades por handle, con
   `Document.CopyObjects`) y **`create_wall`** (muro como polilínea de contorno con espesor real).
 - **`create_structure` alineado al estándar `A-`** (antes usaba `WALLS`/`DOORS`/…); añade capas `I-`

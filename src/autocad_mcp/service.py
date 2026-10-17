@@ -13,6 +13,7 @@ from autocad_mcp.features.documents import DocumentTools
 from autocad_mcp.features.geometry import GeometryTools
 from autocad_mcp.features.grid import GridTools
 from autocad_mcp.features.info import InfoTools
+from autocad_mcp.features.layouts import LayoutTools
 from autocad_mcp.features.ops import BatchTool, OpsTools
 from autocad_mcp.features.standards import StandardsTools
 from autocad_mcp.features.structures import StructureTools
@@ -40,6 +41,7 @@ class AutoCADService:
         self.grid = GridTools(self.conn, self.cache)
         self.blocks = BlockTools(self.conn, self.cache)
         self.dimensions = DimensionTools(self.conn, self.cache)
+        self.layouts = LayoutTools(self.conn, self.cache)
 
         batch_tools: dict[str, BatchTool] = {
             "create_line": self.geometry.create_line,
