@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from autocad_mcp.com import as_dynamic, variant_point
+from autocad_mcp.com import as_dynamic, variant_objects, variant_point
 from autocad_mcp.connection import AutoCADConnection
 from autocad_mcp.features.base import FeatureBase
 
@@ -80,6 +80,80 @@ class BlockTools(FeatureBase):
             "rotation": float(rotation),
             "layer": layer,
             "message": f"Bloque '{name}' insertado en {position}",
+        }
+
+    def create_block(
+        self,
+        name: str,
+        handles: list[str],
+        base_point: list[float] | None = None,
+        delete_source: bool = False,
+    ) -> dict[str, Any]:
+        """Crea (o redefine) una definicion de bloque a partir de entidades por handle.
+
+        Las entidades se COPian a la definicion (``Document.CopyObjects``). Con
+        ``delete_source=True`` se borran ademas los originales del ModelSpace
+        (equivale a BLOCK con "convertir en bloque").
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+        if not name:
+            return {"success": False, "error": "name es obligatorio"}
+
+        wanted = {str(h) for h in handles}
+        if not wanted:
+            return {"success": False, "error": "handles vacio"}
+
+        doc = self.conn.doc
+        model_space = self.conn.model_space()
+        sources: list[Any] = []
+        for i in range(model_space.Count):
+            try:
+                entity = model_space.Item(i)
+                if str(entity.Handle) in wanted:
+                    sources.append(entity)
+            except Exception:  # noqa: BLE001
+                continue
+        if not sources:
+            return {"success": False, "error": "No se encontraron entidades con esos handles"}
+
+        base = [float(v) for v in (base_point or [0.0, 0.0, 0.0])]
+        while len(base) < 3:
+            base.append(0.0)
+
+        # Redefinir: si ya existe, se elimina antes.
+        try:
+            doc.Blocks.Item(name).Delete()
+        except Exception:  # noqa: BLE001 - no existia
+            pass
+
+        try:
+            block = doc.Blocks.Add(variant_point(base[0], base[1], base[2]), str(name))
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"No se pudo crear el bloque '{name}': {exc}"}
+
+        try:
+            doc.CopyObjects(variant_objects(sources), block)
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"CopyObjects fallo: {exc}"}
+
+        if delete_source:
+            for entity in sources:
+                try:
+                    entity.Delete()
+                except Exception:  # noqa: BLE001
+                    pass
+
+        self.conn.regen()
+        self._invalidate()
+        return {
+            "success": True,
+            "block": str(name),
+            "entities": len(sources),
+            "deleted_source": bool(delete_source),
+            "base_point": base,
+            "message": f"Bloque '{name}' definido con {len(sources)} entidades"
+            + (" (originales borrados)" if delete_source else ""),
         }
 
     def explode_entities(self, handles: list[str]) -> dict[str, Any]:

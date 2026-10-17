@@ -85,7 +85,7 @@ def main() -> int:
         "wall", {"start": [0, 0], "end": [0, 20]}, label="M1"
     )
     check("create_structure success", bool(wall.get("success")))
-    check("create_structure usa capa WALLS", wall.get("layer") == "WALLS")
+    check("create_structure usa capa A-MUROS-CARGA", wall.get("layer") == "A-MUROS-CARGA")
 
     # --- invalidacion de cache (fix Camino A) ---
     before = service.info.get_entities()["returned_count"]
@@ -156,6 +156,26 @@ def main() -> int:
     check(
         "explode_entities success",
         bool(exploded.get("success")) and exploded.get("exploded_count") == 1,
+    )
+
+    # --- create_wall (polilinea de contorno con espesor real) ---
+    wall = service.geometry.create_wall([[0, 30], [5, 30]], thickness=0.15, color="bylayer")
+    check("create_wall success", bool(wall.get("success")))
+    check("create_wall crea 1 polilinea", len(wall.get("handles", [])) == 1)
+
+    # --- create_block desde handles (con borrado de originales) ---
+    l1 = service.geometry.create_line([80, 80], [81, 81], "bylayer")
+    l2 = service.geometry.create_line([81, 80], [80, 81], "bylayer")
+    made = service.blocks.create_block(
+        "SMOKE-DEF",
+        [l1["handles"][0], l2["handles"][0]],
+        delete_source=True,
+    )
+    check("create_block success", bool(made.get("success")) and made.get("entities") == 2)
+    listing2 = service.blocks.list_blocks()
+    check(
+        "create_block aparece en list_blocks",
+        any(b["name"] == "SMOKE-DEF" for b in listing2.get("blocks", [])),
     )
 
     # Limpieza final
