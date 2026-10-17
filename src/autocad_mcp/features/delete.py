@@ -83,14 +83,14 @@ class DeleteTools(FeatureBase):
 
     def delete_entities_by_color(self, color: str | int) -> dict[str, Any]:
         idx = color_index(color)
-        return self._delete_with_filter(lambda e: int(e.Color) == idx)
+        return self._delete_with_filter(lambda e: int(e.color) == idx)
 
     def delete_entities_by_type_and_color(
         self, entity_type: str, color: str | int
     ) -> dict[str, Any]:
         idx = color_index(color)
         return self._delete_with_filter(
-            lambda e: str(e.ObjectName) == entity_type and int(e.Color) == idx
+            lambda e: str(e.ObjectName) == entity_type and int(e.color) == idx
         )
 
     def delete_last_entities(self, count: int = 1) -> dict[str, Any]:

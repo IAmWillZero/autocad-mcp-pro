@@ -67,7 +67,7 @@ class InfoTools(FeatureBase):
                     layer_list.append(
                         {
                             "name": str(layer.Name),
-                            "color": int(layer.Color),
+                            "color": int(layer.color),
                             "frozen": bool(layer.Freeze),
                             "locked": bool(layer.Lock),
                         }
@@ -140,7 +140,7 @@ class InfoTools(FeatureBase):
                 "type": str(entity.ObjectName),
                 "layer": str(entity.Layer),
                 "handle": str(entity.Handle),
-                "color": int(entity.Color),
+                "color": int(entity.color),
             }
         except Exception:  # noqa: BLE001
             return None

@@ -91,7 +91,7 @@ class LayerTools:
                 pass
 
             new_layer = layers.Add(layer_name)
-            new_layer.Color = color_index(color)
+            new_layer.color = color_index(color)
             try:
                 new_layer.Description = description
             except Exception:  # noqa: BLE001 - no soportado en algunas versiones

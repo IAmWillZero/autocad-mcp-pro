@@ -53,7 +53,7 @@ class OpsTools(FeatureBase):
         for entity in self._iter_entities():
             try:
                 if str(entity.Handle) == str(handle):
-                    entity.Color = idx
+                    entity.color = idx
                     self.conn.regen()
                     self._invalidate()
                     return {"success": True, "handle": str(handle), "color": idx}

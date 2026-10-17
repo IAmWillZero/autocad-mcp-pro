@@ -25,8 +25,12 @@ class FeatureBase:
 
     @staticmethod
     def set_entity_color(entity: Any, color: str | int) -> None:
-        """Aplica color a una entidad, ignorando errores de version."""
+        """Aplica color a una entidad, ignorando errores de version.
+
+        Se usa ``color`` en minuscula porque el typelib de AutoCAD 2025 expone
+        la propiedad asi (DISPID 1280); el *late binding* es case-insensitive.
+        """
         try:
-            entity.Color = color_index(color)
+            entity.color = color_index(color)
         except Exception:  # noqa: BLE001
             pass
