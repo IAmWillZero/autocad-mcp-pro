@@ -26,6 +26,15 @@ def variant_array(flat_coords: list[float]) -> Any:
     )
 
 
+def variant_objects(objects: list[Any]) -> Any:
+    """Crea un VARIANT SAFEARRAY (VT_DISPATCH) de objetos COM.
+
+    Necesario para ``Document.CopyObjects`` (copiar entidades a una definicion de
+    bloque): una lista/tupla Python da 'Invalid object array'.
+    """
+    return win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_DISPATCH, list(objects))
+
+
 def as_dynamic(obj: Any) -> Any:
     """Envuelve un objeto COM para acceso por nombre (late binding).
 

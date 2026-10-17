@@ -50,14 +50,14 @@ src/autocad_mcp/
 ├── com.py           # helpers VARIANT de pywin32 (único punto junto a connection)
 ├── standards.py     # estándar de dibujo: capas A-, espesores, estilo de cotas, unidades
 └── features/        # operaciones CAD por dominio
-    ├── geometry.py    # línea, círculo, rectángulo, texto, arco
+    ├── geometry.py    # línea, círculo, rectángulo, polilínea, texto, arco, muro (contorno)
     ├── structures.py  # muros, puertas, ventanas, habitaciones, etiquetas
     ├── info.py        # get_drawing_info, get_entities
     ├── analysis.py    # analyze_drawing: resumen, extents, cotas y anotaciones
     ├── standards.py   # apply_standard: capas A-, unidades, estilo de cotas
     ├── grid.py        # create_construction_grid: ejes con burbujas y rótulos
     ├── dimensions.py  # create_dimension: cotas rotadas/alineadas/radiales
-    ├── blocks.py      # list_blocks, insert_block, explode_entities
+    ├── blocks.py      # list_blocks, create_block, insert_block, explode_entities
     ├── documents.py   # list_documents, set_active_document (multi-dibujo)
     ├── delete.py      # borrado por handle/tipo/capa/color (+ purge en delete_all)
     └── ops.py         # undo, recolor, zoom, salud, métricas, batch
@@ -89,8 +89,9 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Estándar | `apply_standard` (unidades metro, capas `A-`, estilo de cotas a escala) |
 | Ejes | `create_construction_grid` (ejes numerados/letrados; burbujas y rótulo en ambos extremos, con *overshoot* por lado: `overshoot_bottom/top/left/right`) |
 | Cotas | `create_dimension` (rotada/alineada/radial/diametral) |
-| Bloques | `list_blocks`, `insert_block`, `explode_entities` |
-| Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |
+| Bloques | `list_blocks`, `create_block` (definir desde entidades por handle), `insert_block`, `explode_entities` |
+| Estructuras | `create_structure` (wall/door/window/room + etiquetas; capas `A-`/`I-` automáticas) |
+| Muros | `create_wall` (polilínea de contorno con **espesor real**, uniones a inglete) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |
 | Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` (+ purge) |
@@ -116,6 +117,12 @@ capas `A-` con color, **espesor jerárquico** y tipo de línea, más el estilo d
 
 Todo se dibuja **1:1** en Model con medidas reales; las entidades nuevas quedan **ByLayer**.
 
+Elementos que no son arquitectónicos (MEP, terreno) usan prefijos por disciplina:
+`I-ELECTR` / `I-SANIT` / `I-CLIM` (instalaciones) y `A-SITIO` (terreno). `create_structure` y
+`create_or_get_layer` resuelven la capa automáticamente (`wall`→`A-MUROS-CARGA`,
+`partition`→`A-MUROS-TABIQ`, `door`/`window`→`A-PUER-VENT`, `furniture`→`A-MOBILIARIO`,
+`text`/`dimension`→`A-TEXTOS`, etc.).
+
 ---
 
 ## Mejoras frente a la base original
@@ -132,6 +139,10 @@ Todo se dibuja **1:1** en Model con medidas reales; las entidades nuevas quedan 
 - **Nuevas tools `list_documents` / `set_active_document`** para elegir entre varios dibujos abiertos.
 - **Nueva tool `analyze_drawing`**: informe del dibujo (resumen por tipo/capa, extents, cotas con su
   medida y anotaciones) para verificar que lo dibujado es correcto.
+- **Nuevas tools de bloque `create_block`** (definir bloques desde entidades por handle, con
+  `Document.CopyObjects`) y **`create_wall`** (muro como polilínea de contorno con espesor real).
+- **`create_structure` alineado al estándar `A-`** (antes usaba `WALLS`/`DOORS`/…); añade capas `I-`
+  para instalaciones y `A-SITIO` para terreno.
 - **Estándar de dibujo profesional**: `apply_standard` (capas `A-` con espesores jerárquicos, unidades
   en metros y estilo de cotas a escala), `create_construction_grid` (ejes de construcción),
   `create_dimension` (cotas) y `list_blocks`/`insert_block`/`explode_entities` (bloques). Ver

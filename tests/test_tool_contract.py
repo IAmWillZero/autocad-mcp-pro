@@ -15,6 +15,8 @@ EXPECTED_TOOLS = {
     "list_blocks",
     "insert_block",
     "explode_entities",
+    "create_block",
+    "create_wall",
     "list_documents",
     "set_active_document",
     "create_structure",

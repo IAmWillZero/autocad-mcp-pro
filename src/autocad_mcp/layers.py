@@ -5,32 +5,44 @@ from __future__ import annotations
 from autocad_mcp.colors import color_index
 from autocad_mcp.connection import AutoCADConnection
 
-# Capas predefinidas por tipo de estructura.
+# Capas predefinidas por tipo de estructura, alineadas al estandar de dibujo:
+#   A- Arquitectura, I- Instalaciones (MEP). Ver autocad_mcp.standards.
 STRUCTURE_LAYERS: dict[str, dict[str, str]] = {
-    "walls": {"name": "WALLS", "color": "white", "description": "Building walls and partitions"},
-    "doors": {"name": "DOORS", "color": "green", "description": "Door openings and frames"},
-    "windows": {"name": "WINDOWS", "color": "cyan", "description": "Window openings and frames"},
-    "furniture": {"name": "FURNITURE", "color": "yellow", "description": "Furniture and fixtures"},
-    "electrical": {
-        "name": "ELECTRICAL",
-        "color": "red",
-        "description": "Electrical fixtures and outlets",
+    "walls": {
+        "name": "A-MUROS-CARGA",
+        "color": "blue",
+        "description": "Muros estructurales cortados",
     },
-    "plumbing": {"name": "PLUMBING", "color": "blue", "description": "Plumbing fixtures and pipes"},
-    "hvac": {"name": "HVAC", "color": "magenta", "description": "HVAC ducts and equipment"},
-    "structure": {"name": "STRUCTURE", "color": "gray", "description": "Structural elements"},
-    "annotation": {"name": "ANNOTATION", "color": "white", "description": "Text and dimensions"},
-    "site": {"name": "SITE", "color": "green", "description": "Site elements and landscaping"},
+    "partitions": {"name": "A-MUROS-TABIQ", "color": "white", "description": "Tabiques divisorios"},
+    "doors": {"name": "A-PUER-VENT", "color": "cyan", "description": "Puertas"},
+    "windows": {"name": "A-PUER-VENT", "color": "cyan", "description": "Ventanas"},
+    "furniture": {
+        "name": "A-MOBILIARIO",
+        "color": "gray",
+        "description": "Mobiliario y artefactos",
+    },
+    "electrical": {"name": "I-ELECTR", "color": "red", "description": "Instalacion electrica"},
+    "plumbing": {"name": "I-SANIT", "color": "blue", "description": "Instalacion sanitaria"},
+    "hvac": {"name": "I-CLIM", "color": "magenta", "description": "Climatizacion y ventilacion"},
+    "structure": {
+        "name": "A-MUROS-CARGA",
+        "color": "blue",
+        "description": "Elementos estructurales",
+    },
+    "annotation": {"name": "A-TEXTOS", "color": "yellow", "description": "Textos y rotulos"},
+    "site": {"name": "A-SITIO", "color": "green", "description": "Terreno y paisajismo"},
     "utilities": {
-        "name": "UTILITIES",
+        "name": "I-ELECTR",
         "color": "red",
-        "description": "Utility lines and equipment",
+        "description": "Lineas y equipos de servicio",
     },
 }
 
 # Mapeo de palabra clave en el nombre del tipo -> clave de STRUCTURE_LAYERS.
 STRUCTURE_TYPE_KEYWORDS: dict[str, str] = {
     "wall": "walls",
+    "partition": "partitions",
+    "tabique": "partitions",
     "door": "doors",
     "window": "windows",
     "furniture": "furniture",

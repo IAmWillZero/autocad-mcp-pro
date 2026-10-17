@@ -41,7 +41,7 @@ tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
 
 1. **Contrato MCP inmutable:** no eliminar ni renombrar herramientas MCP existentes
    (`get_drawing_info`, `get_entities`, `analyze_drawing`, `apply_standard`, `create_construction_grid`,
-   `create_dimension`, `list_blocks`, `insert_block`, `explode_entities`, `create_structure`,
+   `create_dimension`, `list_blocks`, `insert_block`, `explode_entities`, `create_block`, `create_wall`, `create_structure`,
    `create_line`, `create_circle`,
    `create_rectangle`, `create_text`, `create_arc`, `create_polyline`, `zoom_extents`,
    `undo_last_operation`,

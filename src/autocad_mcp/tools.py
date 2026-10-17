@@ -263,6 +263,64 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="create_block",
+            description=(
+                "Create (or redefine) a block definition from existing entities given by handle. "
+                "Entities are copied into the definition; optionally delete the originals."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Block definition name"},
+                    "handles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Handles of the entities to include in the block",
+                    },
+                    "base_point": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Block base/insertion point [x, y] (default 0,0)",
+                    },
+                    "delete_source": {
+                        "type": "boolean",
+                        "description": "Delete the original entities after creating the block",
+                        "default": False,
+                    },
+                },
+                "required": ["name", "handles"],
+            },
+        ),
+        types.Tool(
+            name="create_wall",
+            description=(
+                "Draw a wall as a closed outline polyline with a real thickness, offset from a "
+                "centerline path (mitred joins). Ideal for A-MUROS-CARGA / A-MUROS-TABIQ."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "centerline": {
+                        "type": "array",
+                        "description": "Centerline vertices [[x, y], ...]",
+                        "items": {"type": "array", "items": {"type": "number"}},
+                    },
+                    "thickness": {
+                        "type": "number",
+                        "description": "Wall thickness in drawing units (meters)",
+                        "default": 0.15,
+                    },
+                    "closed": {
+                        "type": "boolean",
+                        "description": "Treat the centerline as a closed loop (ring wall)",
+                        "default": False,
+                    },
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["centerline"],
+            },
+        ),
+        types.Tool(
             name="create_structure",
             description="Create a structured building element (wall, door, window, room) with automatic layer assignment and labeling",
             input_schema={
@@ -757,6 +815,18 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("layer"),
         ),
         "explode_entities": lambda a: service.blocks.explode_entities(a["handles"]),
+        "create_block": lambda a: service.blocks.create_block(
+            a["name"],
+            a["handles"],
+            a.get("base_point"),
+            a.get("delete_source", False),
+        ),
+        "create_wall": lambda a: service.geometry.create_wall(
+            a["centerline"],
+            a.get("thickness", 0.15),
+            a.get("closed", False),
+            a.get("color", "bylayer"),
+        ),
         # structures
         "create_structure": lambda a: service.structures.create_structure(
             a["structure_type"],

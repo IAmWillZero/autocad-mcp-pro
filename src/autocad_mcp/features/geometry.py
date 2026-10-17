@@ -83,6 +83,7 @@ class GeometryTools(FeatureBase):
         return {
             "success": True,
             "handles": handles,
+            "handle": handles[0] if handles else "",
             "type": "AcDbLine" + (" with thickness" if thickness > 0 else ""),
             "color": color,
             "thickness": thickness,
@@ -217,6 +218,115 @@ class GeometryTools(FeatureBase):
             + (", closed" if closed else "")
             + (f", width {width}" if width > 0 else ""),
         }
+
+    def create_wall(
+        self,
+        centerline: list[list[float]],
+        thickness: float = 0.15,
+        closed: bool = False,
+        color: str | int = "bylayer",
+    ) -> dict[str, Any]:
+        """Dibuja un muro como polilinea de contorno con espesor real (offset del eje).
+
+        Para un eje abierto genera UNA polilinea cerrada (banda con tapas); para un
+        eje cerrado (anillo) genera DOS polilineas cerradas (cara exterior e interior).
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        try:
+            pts = [(float(p[0]), float(p[1])) for p in centerline]
+        except (IndexError, TypeError, ValueError) as exc:
+            return {"success": False, "error": f"centerline invalido: {exc}"}
+        if len(pts) < 2:
+            return {"success": False, "error": "centerline requiere al menos 2 puntos"}
+        if thickness <= 0:
+            return {"success": False, "error": "thickness debe ser > 0"}
+
+        left = self._offset_polyline(pts, thickness / 2.0, closed)
+        right = self._offset_polyline(pts, -thickness / 2.0, closed)
+
+        if closed:
+            outer = self.create_polyline(left, closed=True, color=color, width=0.0)
+            inner = self.create_polyline(right, closed=True, color=color, width=0.0)
+            handles = list(outer.get("handles", [])) + list(inner.get("handles", []))
+            if not handles:
+                return outer if "error" in outer else inner
+            return {
+                "success": True,
+                "handles": handles,
+                "type": "Wall",
+                "thickness": thickness,
+                "closed": True,
+                "message": f"Muro anular de {thickness} m (contorno exterior + interior)",
+            }
+
+        outline = left + list(reversed(right))
+        result = self.create_polyline(outline, closed=True, color=color, width=0.0)
+        if result.get("success"):
+            result["type"] = "Wall"
+            result["thickness"] = thickness
+            result["message"] = (
+                f"Muro de {thickness} m creado desde un eje de {len(pts)} puntos "
+                "(polilinea de contorno)"
+            )
+        return result
+
+    @staticmethod
+    def _offset_polyline(
+        points: list[tuple[float, float]], dist: float, closed: bool = False
+    ) -> list[list[float]]:
+        """Desplaza una polilinea ``dist`` por su normal (uniones a inglete)."""
+        offsets: list[tuple[float, float, float, float]] = []
+        count = len(points)
+        indices = range(count) if closed else range(count - 1)
+        for i in indices:
+            x1, y1 = points[i]
+            x2, y2 = points[(i + 1) % count]
+            dx, dy = x2 - x1, y2 - y1
+            length = math.hypot(dx, dy)
+            if length < 1e-12:
+                continue
+            nx, ny = -dy / length, dx / length
+            offsets.append((x1 + nx * dist, y1 + ny * dist, x2 + nx * dist, y2 + ny * dist))
+
+        if not offsets:
+            return [[p[0], p[1]] for p in points]
+
+        if closed:
+            result = []
+            for i in range(len(offsets)):
+                prev = offsets[i - 1]
+                cur = offsets[i]
+                x, y = GeometryTools._line_intersection(prev, cur, (cur[0], cur[1]))
+                result.append([x, y])
+            return result
+
+        result = [[offsets[0][0], offsets[0][1]]]
+        for i in range(len(offsets) - 1):
+            x, y = GeometryTools._line_intersection(
+                offsets[i], offsets[i + 1], (offsets[i][2], offsets[i][3])
+            )
+            result.append([x, y])
+        result.append([offsets[-1][2], offsets[-1][3]])
+        return result
+
+    @staticmethod
+    def _line_intersection(
+        a: tuple[float, float, float, float],
+        b: tuple[float, float, float, float],
+        fallback: tuple[float, float],
+    ) -> tuple[float, float]:
+        """Interseccion de dos rectas (cada una por 2 puntos); ``fallback`` si son paralelas."""
+        ax1, ay1, ax2, ay2 = a
+        bx1, by1, bx2, by2 = b
+        d1x, d1y = ax2 - ax1, ay2 - ay1
+        d2x, d2y = bx2 - bx1, by2 - by1
+        denom = d1x * d2y - d1y * d2x
+        if abs(denom) < 1e-12:
+            return fallback
+        t = ((bx1 - ax1) * d2y - (by1 - ay1) * d2x) / denom
+        return (ax1 + t * d1x, ay1 + t * d1y)
 
     def create_rectangle(
         self,
