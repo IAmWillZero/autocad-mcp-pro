@@ -87,7 +87,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Info | `get_drawing_info`, `get_entities`, `analyze_drawing`, `health_check`, `get_metrics` |
 | Documentos | `list_documents`, `set_active_document` |
 | Estándar | `apply_standard` (unidades metro, capas `A-`, estilo de cotas a escala) |
-| Ejes | `create_construction_grid` (ejes numerados/letrados con burbujas) |
+| Ejes | `create_construction_grid` (ejes numerados/letrados; burbujas y rótulo en ambos extremos, con *overshoot* por lado: `overshoot_bottom/top/left/right`) |
 | Cotas | `create_dimension` (rotada/alineada/radial/diametral) |
 | Bloques | `list_blocks`, `insert_block`, `explode_entities` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |

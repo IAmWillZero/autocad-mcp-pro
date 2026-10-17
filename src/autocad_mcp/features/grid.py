@@ -24,6 +24,10 @@ class GridTools(FeatureBase):
         overshoot: float = 1.0,
         text_height: float = 0.3,
         layer: str = "A-EJES",
+        overshoot_bottom: float | None = None,
+        overshoot_top: float | None = None,
+        overshoot_left: float | None = None,
+        overshoot_right: float | None = None,
     ) -> dict[str, Any]:
         """Crea los ejes: lineas con burbujas y rotulo en ambos extremos."""
         if not self.conn.ensure():
@@ -41,10 +45,10 @@ class GridTools(FeatureBase):
         handles: list[str] = []
         radius = float(bubble_radius)
 
-        y_lo = (min(horizontal) if horizontal else 0.0) - float(overshoot)
-        y_hi = (max(horizontal) if horizontal else 0.0) + float(overshoot)
-        x_lo = (min(vertical) if vertical else 0.0) - float(overshoot)
-        x_hi = (max(vertical) if vertical else 0.0) + float(overshoot)
+        y_lo = (min(horizontal) if horizontal else 0.0) - self._ext(overshoot_bottom, overshoot)
+        y_hi = (max(horizontal) if horizontal else 0.0) + self._ext(overshoot_top, overshoot)
+        x_lo = (min(vertical) if vertical else 0.0) - self._ext(overshoot_left, overshoot)
+        x_hi = (max(vertical) if vertical else 0.0) + self._ext(overshoot_right, overshoot)
 
         def add_axis(
             line_start: list[float],
@@ -109,6 +113,11 @@ class GridTools(FeatureBase):
         }
 
     # --- helpers ---------------------------------------------------------
+    @staticmethod
+    def _ext(value: float | None, fallback: float) -> float:
+        """Extension de un lado: usa el valor propio o el uniforme."""
+        return float(fallback if value is None else value)
+
     @staticmethod
     def _new_line(model_space: Any, start: list[float], end: list[float], layer: str) -> Any:
         line = model_space.AddLine(variant_point(*start), variant_point(*end))

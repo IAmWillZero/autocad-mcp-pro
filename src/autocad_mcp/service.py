@@ -59,11 +59,12 @@ class AutoCADService:
         )
 
     def connect(self) -> bool:
-        """Conecta a AutoCAD y garantiza las capas predefinidas."""
-        ok = self.conn.connect()
-        if ok:
-            self.layer_tools.ensure_structure_layers()
-        return ok
+        """Conecta a AutoCAD.
+
+        Ya no pre-crea capas legacy (WALLS/DOORS/...): el estandar ``A-`` se aplica
+        con ``apply_standard`` y las capas de estructura se crean por demanda.
+        """
+        return bool(self.conn.connect())
 
     def reload_config(self) -> dict[str, object]:
         """Recarga configuracion y reajusta cache/metricas."""
