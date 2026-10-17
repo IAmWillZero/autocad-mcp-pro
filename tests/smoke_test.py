@@ -178,6 +178,24 @@ def main() -> int:
         any(b["name"] == "SMOKE-DEF" for b in listing2.get("blocks", [])),
     )
 
+    # --- layouts / paper space / plot styles ---
+    laylist = service.layouts.list_layouts()
+    check("list_layouts success", bool(laylist.get("success")))
+    check(
+        "list_layouts incluye Model",
+        any(lay["name"] == "Model" for lay in laylist.get("layouts", [])),
+    )
+    made_layout = service.layouts.create_layout("MCP-TEST", plot_style_table="acad.ctb")
+    check("create_layout success", bool(made_layout.get("success")))
+    viewport = service.layouts.create_viewport(
+        "MCP-TEST", [100, 100], 150, 100, scale=0.02, view_center=[0, 0]
+    )
+    check("create_viewport success", bool(viewport.get("success")))
+    plot = service.layouts.set_plot_style_table("MCP-TEST", "monochrome.ctb")
+    check("set_plot_style_table success", bool(plot.get("success")))
+    back = service.layouts.set_active_layout("Model")
+    check("set_active_layout Model", bool(back.get("success")))
+
     # Limpieza final
     service.deleter.delete_all_entities(confirm=True)
 

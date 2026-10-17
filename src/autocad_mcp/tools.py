@@ -321,6 +321,88 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="list_layouts",
+            description="List paper space layouts (tabs) with their plot style table and active flag",
+            input_schema={"type": "object", "properties": {}, "required": []},
+        ),
+        types.Tool(
+            name="create_layout",
+            description="Create a paper space layout (tab), optionally set paper size and plot style table",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "media": {
+                        "type": "string",
+                        "description": "Canonical media name (e.g. 'ISO_A4_(210.00_x_297.00_MM)')",
+                    },
+                    "plot_style_table": {
+                        "type": "string",
+                        "description": "Plot style table that already exists (e.g. 'acad.ctb')",
+                    },
+                },
+                "required": ["name"],
+            },
+        ),
+        types.Tool(
+            name="set_active_layout",
+            description="Activate a layout by name and switch to paper space",
+            input_schema={
+                "type": "object",
+                "properties": {"name": {"type": "string"}},
+                "required": ["name"],
+            },
+        ),
+        types.Tool(
+            name="create_viewport",
+            description=(
+                "Create a paper space viewport in a layout, with an optional scale "
+                "(1:50 -> 0.02) and model view center."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "layout_name": {"type": "string"},
+                    "center": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Viewport center in paper space [x, y]",
+                    },
+                    "width": {"type": "number"},
+                    "height": {"type": "number"},
+                    "scale": {
+                        "type": "number",
+                        "description": "Custom scale factor (e.g. 0.02 for 1:50)",
+                    },
+                    "view_center": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Model space point to center the view on [x, y]",
+                    },
+                    "locked": {"type": "boolean", "default": True},
+                },
+                "required": ["layout_name", "center", "width", "height"],
+            },
+        ),
+        types.Tool(
+            name="set_plot_style_table",
+            description=(
+                "Assign an existing plot style table (.ctb/.stb) to a layout. The file itself "
+                "cannot be created via COM; it must already exist in AutoCAD."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "layout_name": {"type": "string"},
+                    "table": {
+                        "type": "string",
+                        "description": "e.g. 'acad.ctb' or 'monochrome.ctb'",
+                    },
+                },
+                "required": ["layout_name", "table"],
+            },
+        ),
+        types.Tool(
             name="create_structure",
             description="Create a structured building element (wall, door, window, room) with automatic layer assignment and labeling",
             input_schema={
@@ -826,6 +908,24 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("thickness", 0.15),
             a.get("closed", False),
             a.get("color", "bylayer"),
+        ),
+        # layouts / paper space / plot styles
+        "list_layouts": lambda a: service.layouts.list_layouts(),
+        "create_layout": lambda a: service.layouts.create_layout(
+            a["name"], a.get("media"), a.get("plot_style_table")
+        ),
+        "set_active_layout": lambda a: service.layouts.set_active_layout(a["name"]),
+        "create_viewport": lambda a: service.layouts.create_viewport(
+            a["layout_name"],
+            a["center"],
+            a["width"],
+            a["height"],
+            a.get("scale"),
+            a.get("view_center"),
+            a.get("locked", True),
+        ),
+        "set_plot_style_table": lambda a: service.layouts.set_plot_style_table(
+            a["layout_name"], a["table"]
         ),
         # structures
         "create_structure": lambda a: service.structures.create_structure(
