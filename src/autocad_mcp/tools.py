@@ -27,6 +27,25 @@ def list_tool_schemas() -> list[types.Tool]:
             inputSchema={"type": "object", "properties": {}, "required": []},
         ),
         types.Tool(
+            name="list_documents",
+            description="List all open AutoCAD drawings (name, path, active flag)",
+            inputSchema={"type": "object", "properties": {}, "required": []},
+        ),
+        types.Tool(
+            name="set_active_document",
+            description="Bind the server to a specific open drawing by name (get names from list_documents)",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Document name as returned by list_documents (e.g. 'Drawing1.dwg')",
+                    }
+                },
+                "required": ["name"],
+            },
+        ),
+        types.Tool(
             name="get_entities",
             description="Get list of ALL entities in the current drawing with their properties and layer information",
             inputSchema={
@@ -462,6 +481,8 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
         # info
         "get_drawing_info": lambda a: service.info.get_drawing_info(),
         "get_entities": lambda a: service.info.get_entities(a.get("max_entities")),
+        "list_documents": lambda a: service.documents.list_documents(),
+        "set_active_document": lambda a: service.documents.set_active_document(a["name"]),
         # structures
         "create_structure": lambda a: service.structures.create_structure(
             a["structure_type"],

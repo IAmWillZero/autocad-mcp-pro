@@ -6,6 +6,7 @@ from autocad_mcp.cache import TTLCache
 from autocad_mcp.config import AutoCADMCPConfig, get_config
 from autocad_mcp.connection import AutoCADConnection
 from autocad_mcp.features.delete import DeleteTools
+from autocad_mcp.features.documents import DocumentTools
 from autocad_mcp.features.geometry import GeometryTools
 from autocad_mcp.features.info import InfoTools
 from autocad_mcp.features.ops import BatchTool, OpsTools
@@ -28,6 +29,7 @@ class AutoCADService:
         self.structures = StructureTools(self.conn, self.cache, self.geometry, self.layer_tools)
         self.info = InfoTools(self.conn, self.cache)
         self.deleter = DeleteTools(self.conn, self.cache)
+        self.documents = DocumentTools(self.conn, self.cache)
 
         batch_tools: dict[str, BatchTool] = {
             "create_line": self.geometry.create_line,

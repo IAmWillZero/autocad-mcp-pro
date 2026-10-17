@@ -21,9 +21,7 @@ class InfoTools(FeatureBase):
         if not self.conn.ensure():
             return {"error": "Not connected to AutoCAD"}
 
-        cached: dict[str, Any] | None = (
-            self.cache.get("drawing_info") if self.cache else None
-        )
+        cached: dict[str, Any] | None = self.cache.get("drawing_info") if self.cache else None
         if cached is not None:
             return cached
 
@@ -90,9 +88,7 @@ class InfoTools(FeatureBase):
             return {"error": "Not connected to AutoCAD"}
 
         cache_key = f"entities:{max_entities}"
-        cached_entities: dict[str, Any] | None = (
-            self.cache.get(cache_key) if self.cache else None
-        )
+        cached_entities: dict[str, Any] | None = self.cache.get(cache_key) if self.cache else None
         if cached_entities is not None:
             return cached_entities
 

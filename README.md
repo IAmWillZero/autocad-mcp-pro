@@ -52,11 +52,25 @@ src/autocad_mcp/
     ├── geometry.py    # línea, círculo, rectángulo, texto, arco
     ├── structures.py  # muros, puertas, ventanas, habitaciones, etiquetas
     ├── info.py        # get_drawing_info, get_entities
+    ├── documents.py   # list_documents, set_active_document (multi-dibujo)
     ├── delete.py      # borrado por handle/tipo/capa/color
     └── ops.py         # undo, recolor, zoom, salud, métricas, batch
 ```
 
 Regla: **solo `connection.py` y `com.py` tocan `pywin32`/COM**. El resto usa la conexión.
+
+### Multi-documento
+
+Por defecto el servidor se **engancha al dibujo activo en el momento de conectar** y opera sobre él,
+aunque cambies de pestaña en AutoCAD (no sigue el foco). Si cierras ese dibujo, se reengancha de forma
+silenciosa al que quede activo.
+
+Con varios DWGs abiertos usa:
+
+- `list_documents` → dibujos abiertos con `name`, `path` y `active`.
+- `set_active_document(name)` → fija en cuál opera el servidor a partir de ahí.
+
+Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra los demás.
 
 ---
 
@@ -65,6 +79,7 @@ Regla: **solo `connection.py` y `com.py` tocan `pywin32`/COM**. El resto usa la 
 | Grupo | Herramientas |
 |---|---|
 | Info | `get_drawing_info`, `get_entities`, `health_check`, `get_metrics` |
+| Documentos | `list_documents`, `set_active_document` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas y capas automáticas) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |

@@ -41,6 +41,11 @@ def main() -> int:
 
     print(f"Documento: {service.conn.document_name()}")
 
+    # --- documentos abiertos ---
+    docs = service.documents.list_documents()
+    check("list_documents success", bool(docs.get("success")))
+    check("list_documents devuelve >=1 dibujo", docs.get("count", 0) >= 1)
+
     # Limpieza inicial
     service.deleter.delete_all_entities(confirm=True)
     check("limpieza inicial (0 entidades)", service.info.get_entities()["returned_count"] == 0)

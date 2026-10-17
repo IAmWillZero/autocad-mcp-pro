@@ -31,7 +31,7 @@ src/autocad_mcp/
 ├── connection.py    # conexión COM (tenacity + circuit breaker)
 ├── com.py           # helpers VARIANT
 ├── config.py / cache.py / colors.py / layers.py / obs.py
-└── features/        # geometry, structures, info, delete, ops
+└── features/        # geometry, structures, info, documents, delete, ops
 tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
 ```
 
@@ -40,7 +40,7 @@ tests/               # unit tests (sin AutoCAD) + smoke_test.py (con AutoCAD)
 1. **Contrato MCP inmutable:** no eliminar ni renombrar herramientas MCP existentes
    (`get_drawing_info`, `get_entities`, `create_structure`, `create_line`, `create_circle`,
    `create_rectangle`, `create_text`, `create_arc`, `zoom_extents`, `undo_last_operation`,
-   `change_entity_color`, `delete_*`, etc.). Los esquemas solo cambian de forma aditiva
+   `change_entity_color`, `delete_*`, `list_documents`, `set_active_document`, etc.). Los esquemas solo cambian de forma aditiva
    (campos opcionales con default). Candidato de cambio: `tests/test_tool_contract.py`.
 2. **Capa de adaptación única:** solo `connection.py` y `com.py` importan `pywin32`/`pythoncom`.
    Ningún otro módulo toca COM directo.

@@ -153,3 +153,46 @@ class AutoCADConnection:
             return str(self.doc.Name)
         except Exception:  # noqa: BLE001
             return ""
+
+    def list_documents(self) -> list[dict[str, Any]]:
+        """Lista los documentos abiertos: nombre, ruta y marca de activo."""
+        if not self.ensure():
+            return []
+        active_name = self.document_name()
+        documents: list[dict[str, Any]] = []
+        try:
+            docs = self.app.Documents
+            for i in range(int(docs.Count)):
+                try:
+                    doc = docs.Item(i)
+                    name = str(doc.Name)
+                    try:
+                        path = str(doc.Path) if doc.Path else ""
+                    except Exception:  # noqa: BLE001
+                        path = ""
+                    documents.append({"name": name, "path": path, "active": name == active_name})
+                except Exception:  # noqa: BLE001
+                    continue
+        except Exception as exc:  # noqa: BLE001
+            log.warning("list_documents_failed", error=str(exc))
+        return documents
+
+    def set_active_document(self, name: str) -> bool:
+        """Engancha el servidor a un documento por nombre y lo activa."""
+        if not self.ensure():
+            return False
+        try:
+            docs = self.app.Documents
+            for i in range(int(docs.Count)):
+                doc = docs.Item(i)
+                if str(doc.Name) == name:
+                    try:
+                        doc.Activate()
+                    except Exception:  # noqa: BLE001 - activar ventana es best-effort
+                        pass
+                    self.doc = doc
+                    log.info("active_document_changed", document=name)
+                    return True
+        except Exception as exc:  # noqa: BLE001
+            log.warning("set_active_document_failed", error=str(exc))
+        return False

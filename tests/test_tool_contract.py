@@ -8,6 +8,8 @@ from autocad_mcp.tools import list_tool_schemas
 EXPECTED_TOOLS = {
     "get_drawing_info",
     "get_entities",
+    "list_documents",
+    "set_active_document",
     "create_structure",
     "create_or_get_layer",
     "set_current_layer",
