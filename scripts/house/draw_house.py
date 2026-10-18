@@ -161,19 +161,22 @@ def _redraw_dimensions(s: AutoCADService) -> None:
 
     s.layer_tools.set_current_layer("A-COTAS")
     # planta baja (ox=0)
-    for off, breaks in [(1.4, [0, 3, 5.5, 8]), (2.8, [0, 3, 8]), (4.2, [0, 8])]:
+    for off, breaks in [(1.4, [1.0, 2.5, 4.0, 7.0]), (2.8, [1.0, 4.0, 7.0]), (4.2, [1.0, 7.0])]:
         draw_bottom_dims(s, breaks, 4.0, off, 0.0)
     for off, breaks in [
-        (1.4, [4, 7, 10.5, 13.5, 16, 17.5, 21]),
-        (2.8, [4, 10.5, 17.5, 21]),
-        (4.2, [4, 21]),
+        (1.4, [4.0, 6.0, 8.5, 11.0, 13.0, 15.5, 18.0, 21.0]),
+        (2.8, [4.0, 8.5, 13.0, 18.0, 21.0]),
+        (4.2, [4.0, 13.0, 21.0]),
     ]:
-        draw_left_dims(s, breaks, 0.0, off, 0.0)
+        draw_left_dims(s, breaks, 1.0, off, 0.0)
     # planta alta (desplazada +16 en X)
-    for off, breaks in [(3.0, [0, 3, 4, 6, 8]), (4.4, [0, 3, 8]), (5.8, [0, 8])]:
+    for off, breaks in [(3.0, [1.0, 2.5, 4.0, 5.0, 7.0]), (4.4, [1.0, 4.0, 7.0]),
+                        (5.8, [1.0, 7.0])]:
         draw_bottom_dims(s, breaks, 4.0, off, OX)
-    for off, breaks in [(1.4, [4, 7, 9, 12, 14.5, 17.5]), (2.8, [4, 11, 17.5]), (4.2, [4, 17.5])]:
-        draw_left_dims(s, breaks, OX, off, 0.0)
+    for off, breaks in [(1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
+                        (2.8, [4.0, 10.5, 15.5, 21.0]),
+                        (4.2, [4.0, 15.5, 21.0])]:
+        draw_left_dims(s, breaks, 1.0 + OX, off, 0.0)
 
     # Precision: maximo 3 decimales, sin ceros finales (DIMOVERRIDE fiable).
     s.dimensions.set_dimension_precision(3, True)
@@ -312,9 +315,10 @@ def main() -> int:
 
     n1 = _draw_floor(
         s, D.ROOMS1, D.X1, D.Y1, D.OPEN1, D.AXES_V1, D.AXES_H1, D.FIX1, D.TITLE1,
-        bottom_levels=[(1.4, [0, 3, 5.5, 8]), (2.8, [0, 3, 8]), (4.2, [0, 8])],
-        left_levels=[(1.4, [4, 7, 10.5, 13.5, 16, 17.5, 21]), (2.8, [4, 10.5, 17.5, 21]),
-                      (4.2, [4, 21])],
+        bottom_levels=[(1.4, [1.0, 2.5, 4.0, 7.0]), (2.8, [1.0, 4.0, 7.0]), (4.2, [1.0, 7.0])],
+        left_levels=[(1.4, [4.0, 6.0, 8.5, 11.0, 13.0, 15.5, 18.0, 21.0]),
+                     (2.8, [4.0, 8.5, 13.0, 18.0, 21.0]),
+                     (4.2, [4.0, 13.0, 21.0])],
     )
     log("PISO1 muros:", n1)
     s.layer_tools.set_current_layer("A-SITIO")
@@ -329,9 +333,11 @@ def main() -> int:
     _pin(s)
     n2 = _draw_floor(
         s, D.ROOMS2, D.X2, D.Y2, D.OPEN2, D.AXES_V2, D.AXES_H2, D.FIX2, D.TITLE2,
-        bottom_levels=[(3.0, [0, 3, 4, 6, 8]), (4.4, [0, 3, 8]), (5.8, [0, 8])],
-        left_levels=[(1.4, [4, 7, 9, 12, 14.5, 17.5]), (2.8, [4, 11, 17.5]),
-                     (4.2, [4, 17.5])],
+        bottom_levels=[(3.0, [1.0, 2.5, 4.0, 5.0, 7.0]), (4.4, [1.0, 4.0, 7.0]),
+                       (5.8, [1.0, 7.0])],
+        left_levels=[(1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
+                     (2.8, [4.0, 10.5, 15.5, 21.0]),
+                     (4.2, [4.0, 15.5, 21.0])],
         ox=OX,
     )
     log("PISO2 muros:", n2)

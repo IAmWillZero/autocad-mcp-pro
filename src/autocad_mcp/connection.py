@@ -201,8 +201,20 @@ class AutoCADConnection:
             pass
 
     def model_space(self) -> Any:
-        """Devuelve el ModelSpace del documento activo."""
-        return self.doc.ModelSpace
+        """Devuelve el ModelSpace del documento activo.
+
+        Reintenta si AutoCAD rechaza la llamada por estar ocupado
+        (``RPC_E_CALL_REJECTED``), frecuente al encadenar muchas operaciones.
+        """
+        last: Exception | None = None
+        for _ in range(12):
+            try:
+                return self.doc.ModelSpace
+            except Exception as exc:  # noqa: BLE001 - AutoCAD momentaneamente ocupado
+                last = exc
+                time.sleep(0.25)
+        assert last is not None
+        raise last
 
     def document_name(self) -> str:
         """Nombre del documento activo o cadena vacia."""
