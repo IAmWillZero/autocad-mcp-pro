@@ -17,6 +17,7 @@ from autocad_mcp.features.layouts import LayoutTools
 from autocad_mcp.features.ops import BatchTool, OpsTools
 from autocad_mcp.features.standards import StandardsTools
 from autocad_mcp.features.structures import StructureTools
+from autocad_mcp.features.tables import TableTools
 from autocad_mcp.layers import LayerTools
 from autocad_mcp.obs import Metrics
 
@@ -42,6 +43,7 @@ class AutoCADService:
         self.blocks = BlockTools(self.conn, self.cache)
         self.dimensions = DimensionTools(self.conn, self.cache)
         self.layouts = LayoutTools(self.conn, self.cache)
+        self.tables = TableTools(self.conn, self.cache)
 
         batch_tools: dict[str, BatchTool] = {
             "create_line": self.geometry.create_line,

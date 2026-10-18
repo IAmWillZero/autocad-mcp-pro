@@ -372,6 +372,43 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="create_table",
+            description=(
+                "Insert a native AutoCAD table (AcDbTable) and fill its cells with 'data' "
+                "(list of rows). Use for the area table (cuadro de areas), legends and title "
+                "blocks. Native tables are editable and can be linked/exported to Excel."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "description": "Rows of cell values: [[header...], [row...], ...]",
+                        "items": {"type": "array", "items": {"type": ["string", "number"]}},
+                    },
+                    "position": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Insertion point of the top-left corner [x, y]",
+                    },
+                    "row_height": {"type": "number", "default": 0.4},
+                    "col_width": {"type": "number", "default": 2.0},
+                    "col_widths": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Optional per-column widths (overrides col_width per column)",
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "Optional title row added above 'data'",
+                    },
+                    "layer": {"type": "string", "default": "A-TEXTOS"},
+                    "text_height": {"type": "number", "default": 0.18},
+                },
+                "required": ["data"],
+            },
+        ),
+        types.Tool(
             name="list_layouts",
             description="List paper space layouts (tabs) with their plot style table and active flag",
             input_schema={"type": "object", "properties": {}, "required": []},
@@ -971,6 +1008,16 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("angle", 0.0),
             a.get("layer", "A-MUROS-CARGA"),
             a.get("color", "bylayer"),
+        ),
+        "create_table": lambda a: service.tables.create_table(
+            a["data"],
+            a.get("position"),
+            a.get("row_height", 0.4),
+            a.get("col_width", 2.0),
+            a.get("col_widths"),
+            a.get("title"),
+            a.get("layer", "A-TEXTOS"),
+            a.get("text_height", 0.18),
         ),
         # layouts / paper space / plot styles
         "list_layouts": lambda a: service.layouts.list_layouts(),

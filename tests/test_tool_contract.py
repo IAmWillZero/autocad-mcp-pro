@@ -19,6 +19,7 @@ EXPECTED_TOOLS = {
     "create_block",
     "create_wall",
     "create_hatch",
+    "create_table",
     "list_layouts",
     "create_layout",
     "set_active_layout",
