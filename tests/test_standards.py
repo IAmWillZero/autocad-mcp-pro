@@ -35,6 +35,11 @@ def test_dim_variables_scaled_for_meters() -> None:
     assert DIM_VARIABLES["DIMSCALE"] == 1.0
 
 
+def test_dim_variables_limit_decimals() -> None:
+    assert DIM_VARIABLES["DIMDEC"] == 3
+    assert DIM_VARIABLES["DIMZIN"] == 8
+
+
 def test_axis_labels() -> None:
     assert axis_number_label(3) == "3"
     assert axis_letter_label(1) == "A"

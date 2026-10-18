@@ -46,6 +46,7 @@ class AutoCADConnection:
         self.app: Any = None
         self.doc: Any = None
         self.connected = False
+        self._doc_name: str | None = None
         self._circuit_failures = 0
         self._circuit_open_until = 0.0
 
@@ -71,20 +72,43 @@ class AutoCADConnection:
         reraise=True,
     )
     def _do_connect(self) -> None:
-        """Intento de conexion COM (reintentado por tenacity)."""
+        """Intento de conexion COM (reintentado por tenacity).
+
+        Nunca crea un dibujo nuevo si ya hay una instancia de AutoCAD abierta:
+        solo resuelve el documento activo (con reintentos) y, si de verdad no
+        hubiera ninguno, agrega uno sobre la instancia existente. Crear un
+        ``Documents.Add()`` tras un fallo transitorio dejaba dibujos huerfanos.
+        """
         last_error: Exception | None = None
 
         # 1) Instancia ya abierta
         try:
             self.app = win32com.client.GetActiveObject(self.config.autocad_progid)
             self.app.Visible = True
-            self.doc = self.app.ActiveDocument
-            if self.doc:
-                _ = str(self.doc.Name)
-                return
-            raise RuntimeError("No active document")
         except Exception as exc:  # noqa: BLE001
             last_error = exc
+            self.app = None
+
+        if self.app is not None:
+            # Resolver el documento activo sin crear uno nuevo.
+            for _ in range(5):
+                try:
+                    self.doc = self.app.ActiveDocument
+                    if self.doc:
+                        self._doc_name = str(self.doc.Name)
+                        return
+                except Exception as exc:  # noqa: BLE001 - AutoCAD puede estar ocupado
+                    last_error = exc
+                    time.sleep(0.5)
+            # La instancia existe pero sin documento activo: agregar uno.
+            try:
+                self.doc = self.app.Documents.Add()
+                if self.doc:
+                    self._doc_name = str(self.doc.Name)
+                    return
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+            raise last_error if last_error else RuntimeError("No active document")
 
         # 2) Crear nueva instancia
         try:
@@ -93,7 +117,7 @@ class AutoCADConnection:
             time.sleep(2)
             self.doc = self.app.Documents.Add()
             if self.doc:
-                _ = str(self.doc.Name)
+                self._doc_name = str(self.doc.Name)
                 return
             raise RuntimeError("No active document after Dispatch")
         except Exception as exc:  # noqa: BLE001
@@ -126,15 +150,48 @@ class AutoCADConnection:
             return False
 
     def ensure(self) -> bool:
-        """Garantiza una conexion valida (reconecta si hace falta)."""
+        """Garantiza una conexion valida y vuelve al documento propio de la sesion."""
+        bound = self._doc_name  # capturar antes de reconectar (connect lo sobrescribe)
         if not self.connected or self.doc is None:
-            return self.connect()
+            if not self.connect():
+                return False
+            self._reactivate_bound_document(bound)
+            return True
         try:
             _ = str(self.doc.Name)
             return True
         except Exception:  # noqa: BLE001
             self.connected = False
-            return self.connect()
+            if not self.connect():
+                return False
+            self._reactivate_bound_document(bound)
+            return True
+
+    def _reactivate_bound_document(self, name: str | None = None) -> None:
+        """Tras reconectar, se reengancha al documento con el que inicio la sesion."""
+        if name is None:
+            name = self._doc_name
+        if not name or self.app is None:
+            return
+        try:
+            if self.doc is not None and str(self.doc.Name) == name:
+                return
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            docs = self.app.Documents
+            for i in range(int(docs.Count)):
+                doc = docs.Item(i)
+                if str(doc.Name) == name:
+                    try:
+                        doc.Activate()
+                    except Exception:  # noqa: BLE001 - activar ventana es best-effort
+                        pass
+                    self.doc = doc
+                    self._doc_name = name
+                    return
+        except Exception as exc:  # noqa: BLE001
+            log.warning("reactivate_bound_document_failed", document=name, error=str(exc))
 
     def regen(self) -> None:
         """Regenera la vista activa, ignorando errores."""
@@ -191,6 +248,7 @@ class AutoCADConnection:
                     except Exception:  # noqa: BLE001 - activar ventana es best-effort
                         pass
                     self.doc = doc
+                    self._doc_name = name
                     log.info("active_document_changed", document=name)
                     return True
         except Exception as exc:  # noqa: BLE001

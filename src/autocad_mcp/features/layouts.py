@@ -90,12 +90,23 @@ class LayoutTools(FeatureBase):
             layout = self.conn.doc.Layouts.Item(str(name))
             self.conn.doc.ActiveLayout = layout
             self.conn.doc.ActiveSpace = AC_PAPER_SPACE
+            # ActiveLayout puede quedar desincronizado: CTAB cambia la pestana de
+            # forma fiable (comprobado en AutoCAD 2026 via COM).
+            try:
+                self.conn.doc.SetVariable("CTAB", str(name))
+            except Exception:  # noqa: BLE001 - algunos entornos no exponen CTAB
+                pass
         except Exception as exc:  # noqa: BLE001
             return {"success": False, "error": f"No se pudo activar el layout '{name}': {exc}"}
 
         time.sleep(0.5)  # AutoCAD queda ocupado un instante al cambiar de pestana
         self._invalidate()
-        return {"success": True, "active_layout": str(name), "message": f"Layout '{name}' activado"}
+        active = self._active_layout_name()
+        return {
+            "success": True,
+            "active_layout": active or str(name),
+            "message": f"Layout '{name}' activado",
+        }
 
     def create_viewport(
         self,
@@ -133,6 +144,12 @@ class LayoutTools(FeatureBase):
         viewport = safe_operation(add_operation)
         if viewport is None:
             return {"success": False, "error": "No se pudo crear el viewport"}
+
+        # Un PViewport recien creado queda apagado (ViewportOn=False): encenderlo.
+        try:
+            as_dynamic(viewport).ViewportOn = True
+        except Exception:  # noqa: BLE001
+            pass
 
         if scale:
             try:

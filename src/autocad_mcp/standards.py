@@ -45,6 +45,8 @@ DIM_VARIABLES: dict[str, float] = {
     "DIMEXO": 0.08,  # separacion del origen
     "DIMGAP": 0.05,  # separacion texto/linea
     "DIMSCALE": 1.0,  # escala de cotas (1:1 en model)
+    "DIMDEC": 3,  # maximo 3 decimales en el texto de cota
+    "DIMZIN": 8,  # suprime ceros finales (3.500 -> 3.5)
 }
 
 # INSUNITS: 6 = metros.
