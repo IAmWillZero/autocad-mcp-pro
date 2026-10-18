@@ -41,4 +41,26 @@ medianeras).
 | `draw_house.py` | orquestador: dibuja todo y arma layouts |
 | `mk_layouts.py` | layouts A3 con viewport a escala |
 | `verify_house.py` | verificación determinística del dibujo |
-| `check_texts.py` | detección de solapes de texto |
+| `check_texts.py` | detección de solapes de texto (bbox real) |
+| `check_labels.py` | verifica que cada rótulo quede **dentro** de su ambiente |
+
+## Tabla de áreas (`create_table`) — nota importante
+
+La tool MCP `create_table` inserta una tabla nativa (`AcDbTable`). En este AutoCAD la
+API COM **no permite fijar** alto de fila ni ancho de columna (quedan gobernados por
+el *estilo de tabla* activo), y por eso el cuadro de áreas del dibujo se traza con
+líneas a escala real (`_draw_area_table`).
+
+Para que `create_table` salga a escala métrica, configura el estilo de tabla antes
+de usarla (una sola vez por plantilla/DWG):
+
+1. `_TABLESTYLE` → **New** → nombre `MCP-TABLA`.
+2. En *Data*: **Text height** = `0.18`, **Row height** = `0.40`.
+3. En *Title/Header*: text height `0.18` (o desactiva ambas filas).
+4. Cierra el diálogo y crea una tabla con `_TABLE` (usa `MCP-TABLA`). El estilo
+   activo queda en la variable de sistema `CTABLESTYLE`.
+5. Desde ahí, `create_table` respetará ese estilo.
+
+Con el estilo activo correcto, `create_table(data=[["AMBIENTE","AREA"], ...])`
+inserta el cuadro de áreas editable y exportable a Excel.
+
