@@ -16,6 +16,9 @@ ENV/
 .env
 .autocad-mcp/
 
+# Salidas de planos (DWG generados por los scripts de dibujo)
+/out/
+
 # Editor-local state
 .kilo/
 
