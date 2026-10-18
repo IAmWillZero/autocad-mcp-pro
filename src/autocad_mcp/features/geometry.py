@@ -5,9 +5,12 @@ from __future__ import annotations
 import math
 from typing import Any
 
-from autocad_mcp.com import variant_array, variant_point
+from autocad_mcp.com import variant_array, variant_objects, variant_point
 from autocad_mcp.connection import AutoCADConnection, safe_operation
 from autocad_mcp.features.base import FeatureBase
+
+# Patrones predefinidos mas usados en arquitectura (rellenos y poche).
+HATCH_PATTERNS = ("SOLID", "ANSI31", "ANSI32", "ANSI37", "NET", "AR-CONC", "AR-SAND", "EARTH")
 
 
 class GeometryTools(FeatureBase):
@@ -271,6 +274,81 @@ class GeometryTools(FeatureBase):
                 "(polilinea de contorno)"
             )
         return result
+
+    def create_hatch(
+        self,
+        handles: list[str],
+        pattern: str = "SOLID",
+        scale: float = 1.0,
+        angle: float = 0.0,
+        layer: str = "A-MUROS-CARGA",
+        color: str | int = "bylayer",
+    ) -> dict[str, Any]:
+        """Sombreado/poche: rellena el/los contorno(s) cerrados indicados por handle.
+
+        ``pattern`` es un patron predefinido (``SOLID`` para relleno macizo,
+        ``ANSI31`` para achurado, etc.). Los handles deben formar un contorno
+        cerrado (p. ej. la polilinea de un muro de :meth:`create_wall`).
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        pat = str(pattern).strip().upper() or "SOLID"
+        if pat not in HATCH_PATTERNS:
+            return {
+                "success": False,
+                "error": f"Patron desconocido: {pattern}. Use {HATCH_PATTERNS}",
+            }
+
+        entities = self._entities_by_handles(handles)
+        if not entities:
+            return {"success": False, "error": "No se encontraron entidades para el contorno"}
+
+        def hatch_operation() -> Any:
+            # 0 = acHatchPatternTypePreDefined
+            hatch = self.conn.model_space().AddHatch(0, pat, True)
+            hatch.AppendOuterLoop(variant_objects(entities))
+            try:
+                hatch.PatternScale = float(scale)
+            except Exception:  # noqa: BLE001 - SOLID no usa escala
+                pass
+            try:
+                hatch.PatternAngle = math.radians(float(angle))
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                hatch.Layer = layer
+            except Exception:  # noqa: BLE001
+                pass
+            self.set_entity_color(hatch, color)
+            hatch.Evaluate()
+            self.conn.regen()
+            return hatch
+
+        hatch = safe_operation(hatch_operation)
+        if hatch is None:
+            return {"success": False, "error": "No se pudo crear el sombreado", "type": "AcDbHatch"}
+
+        self._invalidate()
+        return {
+            "success": True,
+            "handle": self._handle(hatch, "hatch"),
+            "type": "AcDbHatch",
+            "pattern": pat,
+            "layer": layer,
+            "message": f"Sombreado '{pat}' creado en capa {layer}",
+        }
+
+    def _entities_by_handles(self, handles: list[str]) -> list[Any]:
+        """Resuelve entidades por su handle usando ``Document.HandleToObject``."""
+        entities: list[Any] = []
+        doc = self.conn.doc
+        for h in handles:
+            try:
+                entities.append(doc.HandleToObject(str(h)))
+            except Exception:  # noqa: BLE001 - handle inexistente
+                continue
+        return entities
 
     @staticmethod
     def _offset_polyline(

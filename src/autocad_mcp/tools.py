@@ -345,6 +345,33 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="create_hatch",
+            description=(
+                "Fill one or more closed outlines (given by entity handles) with a predefined hatch "
+                "pattern. Use 'SOLID' for wall poche or 'ANSI31' for hatching. Ideal for cut walls."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Entity handles that form a closed loop (e.g. a wall polyline)",
+                    },
+                    "pattern": {
+                        "type": "string",
+                        "description": "Predefined pattern (SOLID, ANSI31, ANSI37, AR-CONC, ...)",
+                        "default": "SOLID",
+                    },
+                    "scale": {"type": "number", "default": 1.0},
+                    "angle": {"type": "number", "default": 0.0},
+                    "layer": {"type": "string", "default": "A-MUROS-CARGA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["handles"],
+            },
+        ),
+        types.Tool(
             name="list_layouts",
             description="List paper space layouts (tabs) with their plot style table and active flag",
             input_schema={"type": "object", "properties": {}, "required": []},
@@ -935,6 +962,14 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a["centerline"],
             a.get("thickness", 0.15),
             a.get("closed", False),
+            a.get("color", "bylayer"),
+        ),
+        "create_hatch": lambda a: service.geometry.create_hatch(
+            a["handles"],
+            a.get("pattern", "SOLID"),
+            a.get("scale", 1.0),
+            a.get("angle", 0.0),
+            a.get("layer", "A-MUROS-CARGA"),
             a.get("color", "bylayer"),
         ),
         # layouts / paper space / plot styles
