@@ -18,6 +18,7 @@ EXPECTED_TOOLS = {
     "explode_entities",
     "create_block",
     "create_wall",
+    "create_hatch",
     "list_layouts",
     "create_layout",
     "set_active_layout",
