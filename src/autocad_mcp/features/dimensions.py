@@ -13,6 +13,17 @@ _LINEAR_TYPES = ("rotated", "linear")
 _SUPPORTED = ("rotated", "linear", "aligned", "radial", "diametric")
 
 
+def dimoverride_command(decimals: int, suppress_trailing_zeros: bool = True) -> str:
+    """Secuencia de ``DIMOVERRIDE`` que fija DIMDEC/DIMZIN en todas las cotas.
+
+    ``SetVariable("DIMDEC", ...)`` no siempre se adhiere al estilo de cotas de
+    AutoCAD; ``DIMOVERRIDE`` aplica el formato a las cotas existentes de forma
+    fiable y mantiene la cota asociativa (solo cambia el formato del texto).
+    """
+    dimzin = 8 if suppress_trailing_zeros else 0
+    return f"_.DIMOVERRIDE\nDIMDEC\n{int(decimals)}\nDIMZIN\n{dimzin}\n\nALL\n\n"
+
+
 class DimensionTools(FeatureBase):
     """Crea cotas alineadas, rotadas, radiales y diametrales."""
 
@@ -89,6 +100,35 @@ class DimensionTools(FeatureBase):
             "layer": layer,
             "measurement": self._measurement(dim),
             "message": f"Cota {dt} creada en capa {layer}",
+        }
+
+    def set_dimension_precision(
+        self,
+        decimals: int = 3,
+        suppress_trailing_zeros: bool = True,
+    ) -> dict[str, Any]:
+        """Ajusta la precision del texto de todas las cotas del espacio modelo.
+
+        Aplica ``DIMOVERRIDE`` (DIMDEC/DIMZIN) porque ``SetVariable`` no siempre
+        se adhiere al estilo de cotas. Las cotas siguen siendo asociativas: solo
+        cambia el formato del texto.
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        dec = max(0, min(8, int(decimals)))
+        try:
+            self.conn.doc.SendCommand(dimoverride_command(dec, suppress_trailing_zeros))
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"Failed to override dimensions: {exc}"}
+
+        self.conn.regen()
+        self._invalidate()
+        return {
+            "success": True,
+            "decimals": dec,
+            "suppress_trailing_zeros": bool(suppress_trailing_zeros),
+            "message": f"Precision de cotas aplicada: {dec} decimales",
         }
 
     @staticmethod
