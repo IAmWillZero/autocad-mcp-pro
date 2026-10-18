@@ -12,6 +12,7 @@ EXPECTED_TOOLS = {
     "apply_standard",
     "create_construction_grid",
     "create_dimension",
+    "set_dimension_precision",
     "list_blocks",
     "insert_block",
     "explode_entities",

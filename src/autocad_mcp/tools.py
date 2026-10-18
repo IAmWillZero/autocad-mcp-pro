@@ -214,6 +214,30 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="set_dimension_precision",
+            description=(
+                "Set the text precision (decimal places) of every dimension in model space. "
+                "Applies a reliable DIMOVERRIDE of DIMDEC/DIMZIN to the existing dimensions "
+                "(keeps them associative; only changes formatting)."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "decimals": {
+                        "type": "integer",
+                        "description": "Maximum number of decimal places (0-8)",
+                        "default": 3,
+                    },
+                    "suppress_trailing_zeros": {
+                        "type": "boolean",
+                        "description": "Suppress trailing zeros (3.500 -> 3.5)",
+                        "default": True,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
             name="list_blocks",
             description="List named block definitions available in the current drawing",
             input_schema={"type": "object", "properties": {}, "required": []},
@@ -887,6 +911,10 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("leader_length", 1.0),
             a.get("layer", "A-COTAS"),
             a.get("style"),
+        ),
+        "set_dimension_precision": lambda a: service.dimensions.set_dimension_precision(
+            a.get("decimals", 3),
+            a.get("suppress_trailing_zeros", True),
         ),
         "list_blocks": lambda a: service.blocks.list_blocks(),
         "insert_block": lambda a: service.blocks.insert_block(

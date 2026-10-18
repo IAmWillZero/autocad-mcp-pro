@@ -56,7 +56,7 @@ src/autocad_mcp/
     ├── analysis.py    # analyze_drawing: resumen, extents, cotas y anotaciones
     ├── standards.py   # apply_standard: capas A-, unidades, estilo de cotas
     ├── grid.py        # create_construction_grid: ejes con burbujas y rótulos
-    ├── dimensions.py  # create_dimension: cotas rotadas/alineadas/radiales
+    ├── dimensions.py  # create_dimension + set_dimension_precision (cotas)
     ├── blocks.py      # list_blocks, create_block, insert_block, explode_entities
     ├── layouts.py     # list/create/set_active layout, create_viewport, plot style table
     ├── documents.py   # list_documents, set_active_document (multi-dibujo)
@@ -89,7 +89,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Documentos | `list_documents`, `set_active_document` |
 | Estándar | `apply_standard` (unidades metro, capas `A-`, estilo de cotas a escala) |
 | Ejes | `create_construction_grid` (ejes numerados/letrados; burbujas y rótulo en ambos extremos, con *overshoot* por lado: `overshoot_bottom/top/left/right`) |
-| Cotas | `create_dimension` (rotada/alineada/radial/diametral) |
+| Cotas | `create_dimension` (rotada/alineada/radial/diametral), `set_dimension_precision` (máx. decimales del texto vía `DIMOVERRIDE`) |
 | Bloques | `list_blocks`, `create_block` (definir desde entidades por handle), `insert_block`, `explode_entities` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas; capas `A-`/`I-` automáticas) |
 | Muros | `create_wall` (polilínea de contorno con **espesor real**, uniones a inglete) |
