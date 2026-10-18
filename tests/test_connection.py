@@ -159,3 +159,33 @@ def test_rebinds_to_bound_document_after_reconnect(
     assert conn.ensure() is True
     assert conn.doc is bound
     assert conn._doc_name == "Drawing5.dwg"
+
+
+class _FlakyModelSpaceDoc:
+    """ModelSpace rechaza la llamada unas veces (RPC ocupada) y luego responde."""
+
+    def __init__(self, fail_times: int) -> None:
+        self._fail = fail_times
+        self.calls = 0
+        self.space = object()
+
+    @property
+    def Name(self) -> str:
+        return "Drawing5.dwg"
+
+    @property
+    def ModelSpace(self) -> Any:
+        self.calls += 1
+        if self._fail > 0:
+            self._fail -= 1
+            raise RuntimeError("RPC_E_CALL_REJECTED")
+        return self.space
+
+
+def test_model_space_retries_when_busy(quiet_sleep: None) -> None:
+    doc = _FlakyModelSpaceDoc(fail_times=3)
+    conn = AutoCADConnection()
+    conn.connected = True
+    conn.doc = doc
+    assert conn.model_space() is doc.space
+    assert doc.calls == 4
