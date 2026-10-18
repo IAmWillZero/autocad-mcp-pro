@@ -367,6 +367,10 @@ def list_tool_schemas() -> list[types.Tool]:
                     "angle": {"type": "number", "default": 0.0},
                     "layer": {"type": "string", "default": "A-MUROS-CARGA"},
                     "color": {"type": "string", "default": "bylayer"},
+                    "transparency": {
+                        "type": "string",
+                        "description": "Optional transparency: 'ByLayer' or a percent 0-90 (e.g. '50')",
+                    },
                 },
                 "required": ["handles"],
             },
@@ -1008,6 +1012,7 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("angle", 0.0),
             a.get("layer", "A-MUROS-CARGA"),
             a.get("color", "bylayer"),
+            a.get("transparency"),
         ),
         "create_table": lambda a: service.tables.create_table(
             a["data"],

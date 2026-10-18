@@ -283,12 +283,14 @@ class GeometryTools(FeatureBase):
         angle: float = 0.0,
         layer: str = "A-MUROS-CARGA",
         color: str | int = "bylayer",
+        transparency: str | int | None = None,
     ) -> dict[str, Any]:
         """Sombreado/poche: rellena el/los contorno(s) cerrados indicados por handle.
 
         ``pattern`` es un patron predefinido (``SOLID`` para relleno macizo,
         ``ANSI31`` para achurado, etc.). Los handles deben formar un contorno
         cerrado (p. ej. la polilinea de un muro de :meth:`create_wall`).
+        ``transparency`` opcional: ``"ByLayer"`` o un porcentaje 0-90 (``"50"``).
         """
         if not self.conn.ensure():
             return {"error": "Not connected to AutoCAD"}
@@ -320,6 +322,13 @@ class GeometryTools(FeatureBase):
                 hatch.Layer = layer
             except Exception:  # noqa: BLE001
                 pass
+            if transparency is not None:
+                try:
+                    hatch.EntityTransparency = (
+                        transparency if isinstance(transparency, str) else str(transparency)
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
             self.set_entity_color(hatch, color)
             hatch.Evaluate()
             self.conn.regen()
@@ -336,6 +345,7 @@ class GeometryTools(FeatureBase):
             "type": "AcDbHatch",
             "pattern": pat,
             "layer": layer,
+            "transparency": transparency,
             "message": f"Sombreado '{pat}' creado en capa {layer}",
         }
 
