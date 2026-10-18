@@ -29,55 +29,45 @@ def draw_walls_and_openings(s, rooms: list, X: list, Y: list, openings: list) ->
     return len(edges)
 
 
-def _text_width(label: str, height: float, factor: float = 0.62) -> float:
-    """Ancho aproximado del texto (fuente tipo simplex: ~0.62 de la altura por caracter)."""
-    return len(label) * factor * height
-
-
 def draw_labels(s, rooms: list, X: list, Y: list, height: float = 0.22) -> None:
-    """Rotula cada ambiente (nombre + superficie); ajusta al local y separa solapes."""
+    """Rotula cada ambiente (nombre + superficie) ENCUADRADO dentro de su area.
+
+    El bloque de texto (nombre arriba, superficie abajo) se centra y se ajusta
+    para caber por completo dentro de la cara interior del local, sin invadir
+    muros ni salirse a la circulacion.
+    """
     s.layer_tools.set_current_layer("A-TEXTOS")
-    items: list[list] = []
+    margin = 0.10
+    # ancho real del texto ~0.95 de la altura por caracter (fuente del dibujo);
+    # se usa 1.0 con holgura para no invadir muros.
+    wf = 1.0
     for (label, i0, i1, j0, j1) in rooms:
-        cx = (X[i0] + X[i1]) / 2.0
-        cy = (Y[j0] + Y[j1]) / 2.0
-        inner_w = max((X[i1] - X[i0]) - 0.30, 0.4)
-        inner_h = max((Y[j1] - Y[j0]) - 0.30, 0.4)
-        area = abs(X[i1] - X[i0]) * abs(Y[j1] - Y[j0])
-        area_txt = f"{area:.2f} m2"
-        h = height
-        if label:
-            h = min(h, inner_w / _text_width(label, 1.0))
-        h = min(h, inner_h * 0.55)
-        h = max(h, 0.09)
-        if label:
-            items.append([label, cx, cy + h * 0.45, h])
-        ha = max(min(h * 0.72, inner_w / _text_width(area_txt, 1.0)), 0.07)
-        items.append([area_txt, cx, cy - h * 0.60, ha])
-
-    # separa etiquetas que se pisen (desplaza en Y, que es lo mas holgado)
-    for _ in range(60):
-        moved = False
-        for a in range(len(items)):
-            for b in range(a + 1, len(items)):
-                la, xa, ya, ha = items[a]
-                lb, xb, yb, hb = items[b]
-                wa, wb = _text_width(la, ha), _text_width(lb, hb)
-                if abs(xa - xb) < (wa + wb) / 2 + 0.05 and abs(ya - yb) < (ha + hb) / 2 + 0.05:
-                    push = ((ha + hb) / 2 + 0.07 - abs(ya - yb)) / 2.0
-                    if ya <= yb:
-                        items[a][2] -= push
-                        items[b][2] += push
-                    else:
-                        items[a][2] += push
-                        items[b][2] -= push
-                    moved = True
-        if not moved:
-            break
-
-    for label, cx, cy, h in items:
-        if label:
-            s.geometry.create_text([cx, cy], label, round(h, 3), "bylayer")
+        x0, x1 = X[i0], X[i1]
+        y0, y1 = Y[j0], Y[j1]
+        area = abs(x1 - x0) * abs(y1 - y0)
+        lines = [t for t in (label, f"{area:.2f} m2") if t]
+        if not lines:
+            continue
+        cx = (x0 + x1) / 2.0
+        inner_w = max((x1 - x0) - 2 * margin, 0.2)
+        inner_h = max((y1 - y0) - 2 * margin, 0.2)
+        widest = max(len(t) for t in lines)
+        n = len(lines)
+        h_w = inner_w / (wf * widest)            # cabe la linea mas larga
+        h_h = inner_h / (1.0 + 1.25 * (n - 1))   # cabe el bloque completo
+        h = max(min(height, h_w, h_h), 0.09)
+        line_gap = 1.25 * h
+        total = h + (n - 1) * line_gap
+        # bloque centrado verticalmente, luego encajado dentro del local
+        top = (y0 + y1) / 2.0 + total / 2.0
+        top = min(top, y1 - margin)
+        if top - total < y0 + margin:
+            top = y0 + margin + total
+        for k, t in enumerate(lines):
+            wd = wf * len(t) * h
+            x = min(max(cx - wd / 2.0, x0 + margin), x1 - margin - wd)
+            y = top - h - k * line_gap
+            s.geometry.create_text([round(x, 3), round(y, 3)], t, round(h, 3), "bylayer")
 
 
 def draw_fixtures(s, fixtures: list, ox: float, oy: float) -> None:

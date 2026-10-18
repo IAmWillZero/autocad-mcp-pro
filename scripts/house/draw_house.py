@@ -213,7 +213,12 @@ def _poche_walls(s: AutoCADService) -> int:
 def _draw_area_table(s: AutoCADService, rows: list[tuple[str, str, float]], x0: float = 9.6,
                      y_top: float = 20.5, w1: float = 2.9, w2: float = 1.7,
                      rh: float = 0.55, th: float = 0.28) -> int:
-    """Dibuja un cuadro de superficies (ambiente | area) en la zona libre."""
+    """Dibuja un cuadro de superficies (ambiente | area) en la zona libre.
+
+    Nota: ``create_table`` (tabla nativa ``AcDbTable``) existe como herramienta, pero en
+    este AutoCAD la API COM no permite fijar alto de fila/ancho de columna (quedan en
+    unidades del estilo de tabla), asi que el cuadro se traza con lineas a escala real.
+    """
     w = w1 + w2
     s.layer_tools.set_current_layer("A-TEXTOS")
 
@@ -372,7 +377,7 @@ def main() -> int:
     rows.append(("SUBTOTAL PLANTA ALTA", "h", a2))
     rows.append(("TOTAL", "h", a1 + a2))
     _retry(
-        lambda: _draw_area_table(s, rows, x0=26.5, y_top=20.5, w1=3.5, w2=1.7, rh=0.52, th=0.26),
+        lambda: _draw_area_table(s, rows, x0=26.5, y_top=20.5, w1=4.2, w2=1.7, rh=0.46, th=0.18),
         tries=4,
         delay=1.5,
     )

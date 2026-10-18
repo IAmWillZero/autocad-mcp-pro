@@ -61,5 +61,5 @@ def _draw_floor(
     for off, breaks in left_levels:
         draw_left_dims(s, breaks, left, off, oy)
     s.layer_tools.set_current_layer("A-TEXTOS")
-    s.geometry.create_text([Xa[0], max(Ya) + 2.4], title, 0.32, "bylayer")
+    s.geometry.create_text([Xa[0], max(Ya) + 2.4], title, 0.24, "bylayer")
     return n

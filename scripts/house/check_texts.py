@@ -28,10 +28,12 @@ for i in range(ms.Count):
         h = float(e.Height)
         ip = e.InsertionPoint
         x, y = float(ip[0]), float(ip[1])
+        lo, hi = e.GetBoundingBox()
+        box = (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1]))
     except Exception:  # noqa: BLE001
         continue
     wd = len(txt) * 0.62 * h
-    texts.append((txt, x, y, wd, h, (x, y, x + wd, y + h)))
+    texts.append((txt, x, y, wd, h, box))
 
 print("textos:", len(texts))
 

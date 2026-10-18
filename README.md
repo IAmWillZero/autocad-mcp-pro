@@ -93,6 +93,7 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Bloques | `list_blocks`, `create_block` (definir desde entidades por handle), `insert_block`, `explode_entities` |
 | Estructuras | `create_structure` (wall/door/window/room + etiquetas; capas `A-`/`I-` automáticas) |
 | Muros | `create_wall` (polilínea de contorno con **espesor real**, uniones a inglete), `create_hatch` (poche: relleno `SOLID`/`ANSI31`… de un contorno cerrado) |
+| Tablas | `create_table` (tabla nativa `AcDbTable`: cuadro de áreas, leyendas y rótulos; ancho por columna con `col_widths`). Editable y exportable a Excel; su alto/ancho de fila siguen el **estilo de tabla** del dibujo |
 | Layouts | `list_layouts`, `create_layout`, `set_active_layout`, `create_viewport` (escala 1:50 → `0.02`), `set_plot_style_table` (`acad.ctb`…) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
 | Capas | `create_or_get_layer`, `set_current_layer` |
@@ -162,6 +163,8 @@ El dibujo se hace **1:1 en Model**; la presentación va en **Layouts (espacio pa
   `create_viewport` (con escala) y `set_plot_style_table`.
 - **Nuevas tools de bloque `create_block`** (definir bloques desde entidades por handle, con
   `Document.CopyObjects`) y **`create_wall`** (muro como polilínea de contorno con espesor real).
+- **Nueva tool `create_table`** (tabla nativa `AcDbTable`): cuadro de áreas, leyendas y rótulos
+  editables en AutoCAD y exportables a Excel, en lugar de dibujarlos con líneas sueltas.
 - **`create_structure` alineado al estándar `A-`** (antes usaba `WALLS`/`DOORS`/…); añade capas `I-`
   para instalaciones y `A-SITIO` para terreno.
 - **Estándar de dibujo profesional**: `apply_standard` (capas `A-` con espesores jerárquicos, unidades
