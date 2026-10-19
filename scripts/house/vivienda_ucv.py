@@ -292,6 +292,22 @@ def _draw_plans(s: AutoCADService) -> None:
     _scale_bar(s, U.PB_OX, -1.6)
 
 
+def _set_pdf_device(s: AutoCADService, layout: str) -> None:
+    """Fase 8/9: deja el layout listo para trazar a PDF en A3 (DWG To PDF.pc3)."""
+    pdf_pc3 = str(Path(os.environ.get("APPDATA", "")) / "Autodesk" / "AutoCAD 2026" / "R25.1"
+                  / "enu" / "plotters" / "DWG To PDF.pc3")
+    if not os.path.exists(pdf_pc3):
+        return
+    try:
+        _retry(lambda: s.layouts.set_active_layout(layout))
+        al = _retry(lambda: as_dynamic(s.conn.doc.ActiveLayout))
+        _retry(lambda: setattr(al, "ConfigName", pdf_pc3))
+        _retry(lambda: setattr(al, "CanonicalMediaName", "ISO_A3_(297.00_x_420.00_MM)"))
+        _retry(lambda: setattr(al, "PlotType", 5))  # 5 = Layout
+    except Exception as exc:  # noqa: BLE001
+        _log("aviso dispositivo PDF", layout, exc)
+
+
 def _cajetin(s: AutoCADService, layout: str, content: str, codigo: str, escala: str) -> None:
     """Fase 8: membrete UCV en el espacio papel del layout."""
     _retry(lambda: s.layouts.set_active_layout(layout))
@@ -405,6 +421,7 @@ def main() -> int:
     for nm, vcx, vcy, w in sheets:
         _retry(lambda nm=nm: s.layouts.create_layout(
             nm, media="ISO_A3_(297.00_x_420.00_MM)", plot_style_table="acad.ctb"))
+        _set_pdf_device(s, nm)
         _retry(lambda nm=nm, vcx=vcx, vcy=vcy, w=w: s.layouts.create_viewport(
             nm, center=[148.5, 235.0], width=w, height=350.0,
             scale=0.01, view_center=[vcx, vcy]))
