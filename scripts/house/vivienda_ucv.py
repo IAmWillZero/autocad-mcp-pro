@@ -20,6 +20,11 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from autocad_mcp.service import AutoCADService  # noqa: E402
 
+import ucv_data as U  # noqa: E402  (scripts/house en sys.path)
+from house_blocks import define_blocks  # noqa: E402
+from house_main import _draw_floor  # noqa: E402
+from draw_house import _frame_viewport  # noqa: E402
+
 OUT_DIR = str(ROOT / "out")
 TARGET = "Vivienda_UCV_Magisterial_230.dwg"
 TARGET_PATH = os.path.join(OUT_DIR, TARGET)
@@ -161,6 +166,27 @@ def _north(s: AutoCADService, cx: float, cy: float, r: float = 0.55) -> None:
     s.geometry.create_text([cx - 0.09, cy + r + 0.12], "N", 0.32, "bylayer")
 
 
+def _draw_plans(s: AutoCADService) -> None:
+    """Fase 3: plantas desarrolladas (muros, vanos, mobiliario, cotas, rotulos)."""
+    define_blocks(s)
+    _draw_floor(
+        s, U.ROOMS1, U.X1, U.Y1, U.OPEN1, U.AXES_V1, U.AXES_H1, U.FIX1, U.TITLE1,
+        bottom_levels=[(1.4, [1.0, 4.0, 7.0]), (2.8, [1.0, 7.0])],
+        left_levels=[(1.4, [4.0, 6.7, 8.37, 9.6, 12.9, 16.0]),
+                     (2.8, [4.0, 6.7, 9.6, 12.9, 16.0])],
+        ox=U.PB_OX,
+    )
+    _terreno(s, U.PB_OX)
+    _draw_floor(
+        s, U.ROOMS2, U.X2, U.Y2, U.OPEN2, U.AXES_V2, U.AXES_H2, U.FIX2, U.TITLE2,
+        bottom_levels=[(1.4, [1.0, 4.0, 7.0]), (2.8, [1.0, 7.0])],
+        left_levels=[(1.4, [4.0, 6.33, 7.66, 8.82, 9.66, 13.66]),
+                     (2.8, [4.0, 6.33, 9.66, 13.66])],
+        ox=U.PA_OX,
+    )
+    _terreno(s, U.PA_OX)
+
+
 def main() -> int:
     s = AutoCADService()
     if not s.connect():
@@ -169,7 +195,7 @@ def main() -> int:
     name = _ensure_target(s)
     _log("Documento:", name)
 
-    for _lm in ("ZONIFICACION",):
+    for _lm in ("ZONIFICACION", "PLANTA BAJA", "PLANTA ALTA"):
         try:
             s.conn.doc.Layouts.Item(_lm).Delete()
         except Exception:  # noqa: BLE001 - no existia
@@ -196,18 +222,22 @@ def main() -> int:
         _zone(s, layer, pts, label, anchor)
 
     s.layer_tools.set_current_layer("A-TEXTOS")
-    s.geometry.create_text([0.0, 24.2], "PLANTA BAJA - ZONIFICACION (PRELIMINAR)", 0.30,
-                           "bylayer")
-    s.geometry.create_text([OX, 24.2], "PLANTA ALTA - ZONIFICACION (PRELIMINAR)", 0.30,
-                           "bylayer")
+    s.geometry.create_text([0.0, 24.2], "PLANTA BAJA - ZONIFICACION", 0.30, "bylayer")
+    s.geometry.create_text([OX, 24.2], "PLANTA ALTA - ZONIFICACION", 0.30, "bylayer")
     s.geometry.create_text(
         [0.0, -1.6],
-        "Psje. Magisterial N.230 - Independencia, Huaraz - Vivienda unifamiliar 8.00 x 23.00 m",
+        "Psje. Magisterial N.230 - Independencia, Huaraz - Vivienda unifamiliar 8.00 x 23.00 m "
+        "(zonificacion preliminar + plantas referenciales)",
         0.22,
         "bylayer",
     )
     _legend(s, 19.5, 24.4)
     _north(s, 26.5, 24.0)
+
+    # --- Fase 3: plantas desarrolladas (region aparte) ---
+    _draw_plans(s)
+    s.layer_tools.set_current_layer("A-TEXTOS")
+    s.geometry.create_text([U.PB_OX, -1.6], U.TITLE1, 0.22, "bylayer")
 
     s.ops.zoom_extents()
     _retry(
@@ -218,9 +248,32 @@ def main() -> int:
     _retry(
         lambda: s.layouts.create_viewport(
             "ZONIFICACION", center=[148.5, 210.0], width=280.0, height=390.0,
-            scale=10.0, view_center=[13.0, 11.8],
+            scale=0.01, view_center=[13.0, 11.8],
         )
     )
+    for name, vcx, vcy in (
+        ("PLANTA BAJA", 43.0, 9.5),
+        ("PLANTA ALTA", 57.0, 9.0),
+    ):
+        _retry(
+            lambda name=name: s.layouts.create_layout(
+                name, media="ISO_A3_(297.00_x_420.00_MM)", plot_style_table="acad.ctb"
+            )
+        )
+        _retry(
+            lambda name=name, vcx=vcx, vcy=vcy: s.layouts.create_viewport(
+                name, center=[148.5, 210.0], width=170.0, height=372.0,
+                scale=0.01, view_center=[vcx, vcy],
+            )
+        )
+    # Deja solo el viewport propio en cada lamina (borra los de plantilla).
+    for name, vcx, vcy, vp_w in (
+        ("ZONIFICACION", 13.0, 11.8, 280.0),
+        ("PLANTA BAJA", 43.0, 9.5, 170.0),
+        ("PLANTA ALTA", 57.0, 9.0, 170.0),
+    ):
+        _retry(lambda name=name, vcx=vcx, vcy=vcy, vp_w=vp_w:
+               _frame_viewport(s, name, vcx, vcy, scale=0.01, vp_width=vp_w))
     s.layouts.set_active_layout("Model")
 
     _retry(lambda: s.conn.doc.Save())

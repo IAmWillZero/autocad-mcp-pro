@@ -49,7 +49,7 @@ def main() -> int:
                 center=[148.5, 210.0],
                 width=170.0,
                 height=372.0,
-                scale=10.0,
+                scale=0.01,
                 view_center=[vcx, vcy],
             )
         )

@@ -414,13 +414,13 @@ def main() -> int:
         vp = _retry(
             lambda name=name, vcx=vcx, vcy=vcy: s.layouts.create_viewport(
                 name, center=[148.5, 210.0], width=170.0, height=372.0,
-                scale=10.0, view_center=[vcx, vcy],
+                scale=0.01, view_center=[vcx, vcy],
             ),
             tries=6,
             delay=1.5,
         )
         log("viewport:", vp.get("message", vp))
-        _frame_viewport(s, name, vcx, vcy, scale=10.0)
+        _frame_viewport(s, name, vcx, vcy, scale=0.01)
     s.layouts.set_active_layout("Model")
 
     rep = s.analysis.analyze_drawing()
