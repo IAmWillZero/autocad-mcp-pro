@@ -46,27 +46,30 @@ def _rect(x0: float, y0: float, x1: float, y1: float) -> list[list[float]]:
 
 
 # (capa, puntos, etiqueta, punto_etiqueta)
+# ORIENTACION: frente=SUR (y=0), fondo=NORTE (y=23), X+ = ESTE.
 PB: list[tuple[str, list[list[float]], str, list[float]]] = [
-    ("Z-AREA-LIBRE", _rect(0.15, 0.15, 7.85, 4.00), "JARDIN FRONTAL (AREA LIBRE)", [4.0, 2.0]),
-    ("Z-SERVICIOS", _rect(5.00, 4.05, 7.85, 8.35), "GARAJE / OFICINA", [6.4, 6.2]),
-    ("Z-SOCIAL", _rect(0.15, 4.05, 4.90, 16.90), "ZONA SOCIAL (SALA-COMEDOR)", [2.5, 10.5]),
-    ("Z-SERVICIOS", _rect(5.00, 8.50, 7.85, 16.90), "COCINA / LAVANDERIA / SS.HH.",
-     [6.4, 12.5]),
-    ("Z-AREA-LIBRE", _rect(0.15, 17.00, 7.85, 20.90), "TERRAZA POSTERIOR", [4.0, 18.9]),
-    ("Z-AREA-LIBRE", _rect(0.15, 21.00, 7.85, 22.85), "JARDIN POSTERIOR", [4.0, 21.9]),
+    ("Z-AREA-LIBRE", _rect(0.15, 0.15, 7.85, 4.00), "JARDIN FRONTAL (SUR)", [4.0, 2.0]),
+    ("Z-SERVICIOS", _rect(1.00, 4.05, 4.00, 9.50), "GARAJE (SO)", [2.5, 6.7]),
+    ("Z-SERVICIOS", _rect(4.00, 4.05, 7.00, 6.67), "OFICINA (SE)", [5.5, 5.3]),
+    ("Z-SERVICIOS", _rect(4.00, 6.67, 7.00, 9.50), "LAVANDERIA / SS.HH. 1", [5.5, 8.1]),
+    ("Z-SERVICIOS", _rect(4.00, 9.50, 7.00, 13.00), "COCINA (ESTE)", [5.5, 11.2]),
+    ("Z-SOCIAL", [[1.00, 9.50], [4.00, 9.50], [4.00, 13.00], [7.00, 13.00],
+                  [7.00, 16.00], [1.00, 16.00]],
+     "SALA-COMEDOR (OESTE/CENTRO)", [3.0, 12.5]),
+    ("Z-AREA-LIBRE", _rect(1.00, 16.00, 7.00, 20.00), "TERRAZA POSTERIOR (NORTE)", [4.0, 18.0]),
+    ("Z-AREA-LIBRE", _rect(0.15, 21.00, 7.85, 22.85), "JARDIN POSTERIOR (NORTE)",
+     [4.0, 21.9]),
 ]
 
 PA: list[tuple[str, list[list[float]], str, list[float]]] = [
-    ("Z-AREA-LIBRE", _rect(OX + 0.15, 4.05, OX + 7.85, 6.00), "BALCON FRONTAL",
-     [OX + 4.0, 5.0]),
-    # zona privada en L (deja el hueco del nuevo SS.HH. apilado)
-    ("Z-PRIVADA", [[OX + 0.15, 6.10], [OX + 7.85, 6.10], [OX + 7.85, 13.00],
-                   [OX + 5.00, 13.00], [OX + 5.00, 15.50], [OX + 7.85, 15.50],
-                   [OX + 7.85, 19.00], [OX + 0.15, 19.00]],
-     "ZONA PRIVADA (DORMITORIOS / ESTAR)", [OX + 2.6, 10.0]),
-    ("Z-SERVICIOS", _rect(OX + 5.00, 13.00, OX + 7.85, 15.50), "SS.HH.", [OX + 6.4, 14.2]),
-    ("Z-AREA-LIBRE", _rect(OX + 0.15, 19.10, OX + 7.85, 21.00), "BALCON POSTERIOR",
-     [OX + 4.0, 20.0]),
+    ("Z-AREA-LIBRE", _rect(OX + 1.00, 2.00, OX + 7.00, 4.00), "BALCON FRONTAL (SUR)",
+     [OX + 4.0, 3.0]),
+    ("Z-PRIVADA", _rect(OX + 1.00, 4.00, OX + 7.00, 16.00),
+     "ZONA PRIVADA (DORMITORIOS / ESTAR)", [OX + 3.0, 11.0]),
+    ("Z-SERVICIOS", _rect(OX + 4.00, 8.33, OX + 7.00, 10.83), "SS.HH. (existente + nuevo)",
+     [OX + 5.5, 9.6]),
+    ("Z-AREA-LIBRE", _rect(OX + 1.00, 16.00, OX + 7.00, 18.00), "BALCON POSTERIOR (NORTE)",
+     [OX + 4.0, 17.0]),
 ]
 
 
@@ -167,6 +170,14 @@ def _north(s: AutoCADService, cx: float, cy: float, r: float = 0.55) -> None:
     s.geometry.create_text([cx - 0.09, cy + r + 0.12], "N", 0.32, "bylayer")
 
 
+def _outline(s: AutoCADService, pts: list[list[float]], ox: float,
+             layer: str = "A-PROYECC") -> None:
+    """Traza un contorno (terrazas/balcones) desplazado en X por ``ox``."""
+    s.layer_tools.set_current_layer(layer)
+    shifted = [[round(p[0] + ox, 3), round(p[1], 3)] for p in pts]
+    _poly(s, shifted, closed=True)
+
+
 def _draw_plans(s: AutoCADService) -> None:
     """Fase 3: plantas desarrolladas (muros, vanos, mobiliario, cotas, rotulos)."""
     define_blocks(s)
@@ -178,14 +189,18 @@ def _draw_plans(s: AutoCADService) -> None:
         ox=U.PB_OX,
     )
     _terreno(s, U.PB_OX)
+    for pts in (U.JARDIN_FRONTAL, U.TERRAZA_POST, U.JARDIN_POST):
+        _outline(s, pts, U.PB_OX)
     _draw_floor(
         s, U.ROOMS2, U.X2, U.Y2, U.OPEN2, U.AXES_V2, U.AXES_H2, U.FIX2, U.TITLE2,
         bottom_levels=[(1.4, [1.0, 4.0, 7.0]), (2.8, [1.0, 7.0])],
-        left_levels=[(1.4, [4.0, 6.33, 7.66, 8.82, 9.66, 13.66]),
-                     (2.8, [4.0, 6.33, 9.66, 13.66])],
+        left_levels=[(1.4, [4.0, 8.0, 8.33, 9.5, 10.83, 11.33, 16.0]),
+                     (2.8, [4.0, 8.0, 11.33, 16.0])],
         ox=U.PA_OX,
     )
     _terreno(s, U.PA_OX)
+    for pts in (U.BALCON_FRONTAL, U.BALCON_POST):
+        _outline(s, pts, U.PA_OX)
 
 
 def main() -> int:
@@ -234,19 +249,28 @@ def main() -> int:
     )
     _legend(s, 19.5, 24.4)
     _north(s, 26.5, 24.0)
+    s.layer_tools.set_current_layer("A-TEXTOS")
+    s.geometry.create_text(
+        [0.0, 25.4],
+        "ORIENTACION CARDINAL: frente = SUR (Psje. Magisterial), fondo = NORTE; X+ = ESTE. "
+        "Hipotesis de lote, PENDIENTE de confirmar.",
+        0.22,
+        "bylayer",
+    )
 
     # --- Fase 3: plantas desarrolladas (region aparte) ---
     _draw_plans(s)
     s.layer_tools.set_current_layer("A-TEXTOS")
     s.geometry.create_text([U.PB_OX, -1.6], U.TITLE1, 0.22, "bylayer")
 
-    # --- Cuadro de areas (verificacion del programa) ---
+    # --- Cuadro de areas + cuadro de vanos (verificacion del programa) ---
     _retry(lambda: _draw_area_table(
         s, AR.table_rows(), x0=29.5, y_top=24.5, w1=4.6, w2=1.7, rh=0.44, th=0.17))
+    _retry(lambda: _draw_area_table(
+        s, AR.vanos_rows(), x0=29.5, y_top=13.4, w1=4.6, w2=1.0, rh=0.40, th=0.13))
     d = AR.schedule()
-    _log(f"areas: PB {d['total_pb']:.2f} / PA {d['pa_prog']:.2f} (prog) "
-         f"+ ropero {d['total_pa']:.2f} / total {d['total']:.2f} / "
-         f"libre {d['area_libre']:.2f} ({d['libre_pct']:.1f}%)")
+    _log(f"areas: PB {d['total_pb']:.2f} / PA {d['total_pa']:.2f} / "
+         f"total {d['total']:.2f} / libre {d['area_libre']:.2f} ({d['libre_pct']:.1f}%)")
 
     s.ops.zoom_extents()
     _retry(

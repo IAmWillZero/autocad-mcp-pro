@@ -83,10 +83,58 @@ def table_rows() -> list[tuple[str, str, float]]:
     for label, area in d["pa"]:
         rows.append((label, "r", area))
     rows.append(("SUBTOTAL 2.do PISO", "h", d["total_pa"]))
-    rows.append(("ROPERO incluido en el subtotal", "r", 0.0))
     rows.append(("AREA TECHADA TOTAL", "h", d["total"]))
     rows.append(("TERRENO (8.00 x 23.00)", "h", d["terreno"]))
     rows.append(("AREA LIBRE (terreno - huella)", "h", d["area_libre"]))
+    return rows
+
+
+def openings(open_list: list, x: list, y: list) -> list[dict]:
+    """Normaliza cada vano: ancho y distancia desde la esquina de referencia."""
+    out: list[dict] = []
+    for o in open_list:
+        a, b = float(o["a"]), float(o["b"])
+        if o["axis"] == "h":
+            dist = a - x[0]          # distancia desde la esquina OESTE
+        else:
+            dist = a - y[0]          # distancia desde la esquina SUR
+        out.append({
+            "id": o.get("id", "?"),
+            "room": o.get("room", "?"),
+            "orient": o.get("orient", "?"),
+            "axis": o["axis"],
+            "width": abs(b - a),
+            "sill": float(o.get("sill", 0.0)),
+            "dist": dist,
+            "kind": o["kind"],
+        })
+    return out
+
+
+_ROOM_ABBR = {
+    "DORMITORIO PRINCIPAL": "DORM. PRINCIPAL",
+    "DORMITORIO 2": "DORM. 2",
+    "DORMITORIO 3": "DORM. 3",
+    "ESCALERA / HALL": "ESCALERA/HALL",
+    "LAVANDERIA": "LAVAND.",
+    "SS.HH. EXISTENTE": "SS.HH. EXIST.",
+    "SS.HH. NUEVO": "SS.HH. NUEVO",
+}
+
+
+def vanos_rows() -> list[tuple[str, str, float]]:
+    """Cuadro de vanos (id ambiente orient. | ancho) para el plano."""
+    def row(o: dict) -> tuple[str, str, float]:
+        room = _ROOM_ABBR.get(o["room"], o["room"])
+        return (f'{o["id"]} {room} {o["orient"]}', "r", o["width"])
+
+    rows: list[tuple[str, str, float]] = [("VANOS - 1.er PISO", "h", 0.0)]
+    for o in openings(U.OPEN1, U.X1, U.Y1):
+        rows.append(row(o))
+    rows.append(("VANOS - 2.do PISO", "h", 0.0))
+    for o in openings(U.OPEN2, U.X2, U.Y2):
+        rows.append(row(o))
+    rows.append(("Antepecho ventanas 0.90 m (por confirmar)", "r", 0.0))
     return rows
 
 
@@ -111,12 +159,19 @@ def main() -> int:
         print(f"  [ref] {label:26} {cur:12.2f} {ref:11.2f} {cur - ref:+7.2f}")
     print(f"{'SUBTOTAL 2.do PISO (prog.)':32} {d['pa_prog']:12.2f} "
           f"{sum(d['ref_pa'].values()):11.2f} {d['pa_prog'] - sum(d['ref_pa'].values()):+7.2f}")
-    print(f"{'  (+ ropero)':32} {d['total_pa']:12.2f}")
     print("-" * 66)
     print(f"{'AREA TECHADA TOTAL':32} {d['total']:12.2f}")
     print(f"{'TERRENO':32} {d['terreno']:12.2f}")
     print(f"{'AREA LIBRE (terreno - huella)':32} {d['area_libre']:12.2f} "
           f"({d['libre_pct']:.2f} %)")
+    print("-" * 66)
+    print("CUADRO DE VANOS (id / ambiente / orient. / ancho / antepecho / dist.esquina)")
+    for floor, op, x, y in (("1.er PISO", U.OPEN1, U.X1, U.Y1),
+                            ("2.do PISO", U.OPEN2, U.X2, U.Y2)):
+        for o in openings(op, x, y):
+            print(f"  {floor:9} {o['id']:5} {o['room']:22} {o['orient']:8} "
+                  f"{o['width']:5.2f} x alt.antepecho {o['sill']:.2f}  "
+                  f"a {o['dist']:.2f} m de esquina")
     return 0
 
 
