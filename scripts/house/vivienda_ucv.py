@@ -23,7 +23,8 @@ from autocad_mcp.service import AutoCADService  # noqa: E402
 import ucv_data as U  # noqa: E402  (scripts/house en sys.path)
 from house_blocks import define_blocks  # noqa: E402
 from house_main import _draw_floor  # noqa: E402
-from draw_house import _frame_viewport  # noqa: E402
+from draw_house import _frame_viewport, _draw_area_table  # noqa: E402
+import ucv_areas as AR  # noqa: E402
 
 OUT_DIR = str(ROOT / "out")
 TARGET = "Vivienda_UCV_Magisterial_230.dwg"
@@ -172,8 +173,8 @@ def _draw_plans(s: AutoCADService) -> None:
     _draw_floor(
         s, U.ROOMS1, U.X1, U.Y1, U.OPEN1, U.AXES_V1, U.AXES_H1, U.FIX1, U.TITLE1,
         bottom_levels=[(1.4, [1.0, 4.0, 7.0]), (2.8, [1.0, 7.0])],
-        left_levels=[(1.4, [4.0, 6.7, 8.37, 9.6, 12.9, 16.0]),
-                     (2.8, [4.0, 6.7, 9.6, 12.9, 16.0])],
+        left_levels=[(1.4, [4.0, 6.67, 8.33, 9.5, 13.0, 16.0]),
+                     (2.8, [4.0, 6.67, 9.5, 13.0, 16.0])],
         ox=U.PB_OX,
     )
     _terreno(s, U.PB_OX)
@@ -238,6 +239,14 @@ def main() -> int:
     _draw_plans(s)
     s.layer_tools.set_current_layer("A-TEXTOS")
     s.geometry.create_text([U.PB_OX, -1.6], U.TITLE1, 0.22, "bylayer")
+
+    # --- Cuadro de areas (verificacion del programa) ---
+    _retry(lambda: _draw_area_table(
+        s, AR.table_rows(), x0=29.5, y_top=24.5, w1=4.6, w2=1.7, rh=0.44, th=0.17))
+    d = AR.schedule()
+    _log(f"areas: PB {d['total_pb']:.2f} / PA {d['pa_prog']:.2f} (prog) "
+         f"+ ropero {d['total_pa']:.2f} / total {d['total']:.2f} / "
+         f"libre {d['area_libre']:.2f} ({d['libre_pct']:.1f}%)")
 
     s.ops.zoom_extents()
     _retry(
