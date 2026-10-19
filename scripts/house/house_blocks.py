@@ -58,3 +58,14 @@ def define_blocks(s) -> None:
     coc2 = s.geometry.create_circle([0.3, 0.5], 0.18, "bylayer")
     coc3 = s.geometry.create_circle([0.3, 1.2], 0.12, "bylayer")
     _mk(s, "A-COCINA", [_h(coc), _h(coc2), _h(coc3)])
+
+    lavd = s.geometry.create_rectangle([0.0, 0.0], [0.60, 0.55], "bylayer")
+    lavd2 = s.geometry.create_circle([0.30, 0.27], 0.16, "bylayer")
+    _mk(s, "A-LAVADERO", [_h(lavd), _h(lavd2)])
+
+    # vegetacion: arbol (copa + tronco) en capa A-TERRENO
+    s.layer_tools.set_current_layer("A-TERRENO")
+    copa = s.geometry.create_circle([0.0, 0.0], 0.70, "bylayer")
+    tronco = s.geometry.create_circle([0.0, 0.0], 0.10, "bylayer")
+    _mk(s, "A-ARBOL", [_h(copa), _h(tronco)])
+

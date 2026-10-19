@@ -8,24 +8,6 @@ from __future__ import annotations
 
 import ucv_data as U
 
-# Areas de referencia del reporte (m2). Sala-comedor se compara como suma.
-REF_PB = {
-    "GARAJE": 16.0,
-    "OFICINA": 8.0,
-    "LAVANDERIA": 5.0,
-    "SS.HH. 1": 3.5,
-    "COCINA": 10.5,
-    "SALA-COMEDOR": 28.0,
-}
-REF_PA = {
-    "DORMITORIO PRINCIPAL": 14.0,
-    "SS.HH. EXISTENTE": 4.0,
-    "SS.HH. NUEVO": 3.5,
-    "SALA DE ESTAR": 10.0,
-    "DORMITORIO 2": 12.0,
-    "DORMITORIO 3": 12.0,
-}
-
 TERRENO = 8.0 * 23.0
 
 
@@ -48,12 +30,12 @@ def schedule() -> dict:
     huella = abs(U.X1[-1] - U.X1[0]) * (U.Y1[-1] - U.Y1[0])
     total_pb = sum(a for _l, a in pb)
     total_pa = sum(a for _l, a in pa)
-    pa_prog = _sum(pa, set(REF_PA))  # PA comparable al programa (sin ropero/adicionales)
-    # comparaciones (sala-comedor = comedor + sala)
-    pb_ref = dict(pb)
-    pb_ref_labels = {lb: a for lb, a in pb}
-    sala_comedor = pb_ref_labels.get("COMEDOR", 0.0) + pb_ref_labels.get("SALA", 0.0)
+    pb_map = dict(pb)
+    sala_comedor = pb_map.get("SALA-COMEDOR", 0.0)
+    pb_ref = dict(pb_map)
     pb_ref["SALA-COMEDOR"] = sala_comedor
+    # PA comparable al programa (incluye estancia/banos; excluye solo HALL).
+    pa_prog = _sum(pa, set(U.REF_PA))
     return {
         "pb": pb,
         "pa": pa,
@@ -66,8 +48,8 @@ def schedule() -> dict:
         "huella": huella,
         "area_libre": TERRENO - huella,
         "libre_pct": (TERRENO - huella) / TERRENO * 100.0,
-        "ref_pb": REF_PB,
-        "ref_pa": REF_PA,
+        "ref_pb": U.REF_PB,
+        "ref_pa": U.REF_PA,
         "pb_ref": pb_ref,
     }
 
@@ -94,10 +76,7 @@ def openings(open_list: list, x: list, y: list) -> list[dict]:
     out: list[dict] = []
     for o in open_list:
         a, b = float(o["a"]), float(o["b"])
-        if o["axis"] == "h":
-            dist = a - x[0]          # distancia desde la esquina OESTE
-        else:
-            dist = a - y[0]          # distancia desde la esquina SUR
+        dist = a - x[0] if o["axis"] == "h" else a - y[0]
         out.append({
             "id": o.get("id", "?"),
             "room": o.get("room", "?"),
@@ -115,10 +94,13 @@ _ROOM_ABBR = {
     "DORMITORIO PRINCIPAL": "DORM. PRINCIPAL",
     "DORMITORIO 2": "DORM. 2",
     "DORMITORIO 3": "DORM. 3",
-    "ESCALERA / HALL": "ESCALERA/HALL",
+    "ESCALERA": "ESCALERA",
+    "HALL": "HALL",
     "LAVANDERIA": "LAVAND.",
-    "SS.HH. EXISTENTE": "SS.HH. EXIST.",
-    "SS.HH. NUEVO": "SS.HH. NUEVO",
+    "SS.HH. 1": "SS.HH. 1",
+    "SS.HH. 2": "SS.HH. 2",
+    "SALA DE ESTAR": "ESTAR",
+    "SALA-COMEDOR": "SALA-COMEDOR",
 }
 
 
@@ -128,10 +110,10 @@ def vanos_rows() -> list[tuple[str, str, float]]:
         room = _ROOM_ABBR.get(o["room"], o["room"])
         return (f'{o["id"]} {room} {o["orient"]}', "r", o["width"])
 
-    rows: list[tuple[str, str, float]] = [("VANOS - 1.er PISO", "h", 0.0)]
+    rows: list[tuple[str, str, float]] = [("1.er PISO", "h", 0.0)]
     for o in openings(U.OPEN1, U.X1, U.Y1):
         rows.append(row(o))
-    rows.append(("VANOS - 2.do PISO", "h", 0.0))
+    rows.append(("2.do PISO", "h", 0.0))
     for o in openings(U.OPEN2, U.X2, U.Y2):
         rows.append(row(o))
     rows.append(("Antepecho ventanas 0.90 m (por confirmar)", "r", 0.0))
@@ -157,8 +139,8 @@ def main() -> int:
     for label, ref in d["ref_pa"].items():
         cur = dict(d["pa"]).get(label, 0.0)
         print(f"  [ref] {label:26} {cur:12.2f} {ref:11.2f} {cur - ref:+7.2f}")
-    print(f"{'SUBTOTAL 2.do PISO (prog.)':32} {d['pa_prog']:12.2f} "
-          f"{sum(d['ref_pa'].values()):11.2f} {d['pa_prog'] - sum(d['ref_pa'].values()):+7.2f}")
+    print(f"{'SUBTOTAL 2.do PISO':32} {d['total_pa']:12.2f} "
+          f"{sum(d['ref_pa'].values()):11.2f} {d['total_pa'] - sum(d['ref_pa'].values()):+7.2f}")
     print("-" * 66)
     print(f"{'AREA TECHADA TOTAL':32} {d['total']:12.2f}")
     print(f"{'TERRENO':32} {d['terreno']:12.2f}")

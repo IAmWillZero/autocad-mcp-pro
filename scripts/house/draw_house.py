@@ -212,7 +212,8 @@ def _poche_walls(s: AutoCADService) -> int:
 
 def _draw_area_table(s: AutoCADService, rows: list[tuple[str, str, float]], x0: float = 9.6,
                      y_top: float = 20.5, w1: float = 2.9, w2: float = 1.7,
-                     rh: float = 0.55, th: float = 0.28) -> int:
+                     rh: float = 0.55, th: float = 0.28,
+                     header: str = "CUADRO DE AREAS") -> int:
     """Dibuja un cuadro de superficies (ambiente | area) en la zona libre.
 
     Nota: ``create_table`` (tabla nativa ``AcDbTable``) existe como herramienta, pero en
@@ -237,7 +238,7 @@ def _draw_area_table(s: AutoCADService, rows: list[tuple[str, str, float]], x0: 
     vline(x0 + w, y_bot, y_top)
 
     # cabecera
-    s.geometry.create_text([x0 + 0.08, y_top - rh + 0.12], "CUADRO DE AREAS", th, "bylayer")
+    s.geometry.create_text([x0 + 0.08, y_top - rh + 0.12], header, th, "bylayer")
     for i, (amb, kind, area) in enumerate(rows):
         y = y_top - (i + 2) * rh + 0.12
         if kind == "h":
