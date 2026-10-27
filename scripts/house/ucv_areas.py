@@ -27,9 +27,9 @@ def schedule() -> dict:
     """Devuelve el cuadro completo (areas por planta, subtotales y libres)."""
     pb = floor_areas(U.ROOMS1, U.X1, U.Y1)
     pa = floor_areas(U.ROOMS2, U.X2, U.Y2)
-    huella = abs(U.X1[-1] - U.X1[0]) * (U.Y1[-1] - U.Y1[0])
     total_pb = sum(a for _l, a in pb)
     total_pa = sum(a for _l, a in pa)
+    huella = total_pb
     pb_map = dict(pb)
     sala_comedor = pb_map.get("SALA-COMEDOR", 0.0)
     pb_ref = dict(pb_map)
@@ -95,10 +95,14 @@ _ROOM_ABBR = {
     "DORMITORIO 2": "DORM. 2",
     "DORMITORIO 3": "DORM. 3",
     "ESCALERA": "ESCALERA",
+    "CORREDOR": "CORREDOR",
     "HALL": "HALL",
+    "OFICINA": "OFICINA",
+    "COCINA": "COCINA",
     "LAVANDERIA": "LAVAND.",
     "SS.HH. 1": "SS.HH. 1",
     "SS.HH. 2": "SS.HH. 2",
+    "SS.HH. 3": "SS.HH. 3",
     "SALA DE ESTAR": "ESTAR",
     "SALA-COMEDOR": "SALA-COMEDOR",
 }

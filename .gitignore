@@ -19,6 +19,12 @@ ENV/
 # Salidas de planos (DWG generados por los scripts de dibujo)
 /out/
 
+# Scripts one-off de scratch (diagnóstico/parches puntuales, no forman parte del repo)
+/scripts/expresion/
+
+# Logs de trazado
+*.log
+
 # Editor-local state
 .kilo/
 

@@ -54,11 +54,13 @@ def main() -> int:
     by_type: Counter[str] = Counter()
     texts: list[tuple[str, tuple]] = []
     refs: Counter[str] = Counter()
+    wall_dims: list[float] = []
     for i in range(n):
         try:
             e = as_dynamic(ms.Item(i))
             oname = str(e.ObjectName)
-            by_layer[str(e.Layer)] += 1
+            lay = str(e.Layer)
+            by_layer[lay] += 1
             by_type[oname] += 1
             if oname == "AcDbText":
                 lo, hi = e.GetBoundingBox()
@@ -66,6 +68,9 @@ def main() -> int:
                               (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1]))))
             elif oname == "AcDbBlockReference":
                 refs[str(e.Name)] += 1
+            elif oname == "AcDbPolyline" and lay == "A-MUROS-CARGA":
+                lo, hi = e.GetBoundingBox()
+                wall_dims.append(min(float(hi[0]) - float(lo[0]), float(hi[1]) - float(lo[1])))
         except Exception:  # noqa: BLE001
             continue
 
@@ -85,9 +90,12 @@ def main() -> int:
         def ov(a, b, pad=0.02):
             return not (a[2] + pad <= b[0] or b[2] + pad <= a[0]
                         or a[3] + pad <= b[1] or b[3] + pad <= a[1])
-        return [(texts[i][0], texts[j][0])
-                for i in range(len(texts)) for j in range(i + 1, len(texts))
-                if ov(texts[i][1], texts[j][1])]
+        # Solo la zona de planos/zonificacion (x < 66) para no medir las laminas
+        # de cortes/elevaciones/detalles, que reutilizan etiquetas.
+        plan = [(t, b) for (t, b) in texts if b[0] < 66.0]
+        return [(plan[i][0], plan[j][0])
+                for i in range(len(plan)) for j in range(i + 1, len(plan))
+                if ov(plan[i][1], plan[j][1])]
 
     hit = overlaps()
     check("sin solapes de texto", not hit, f"({len(texts)} textos, {len(hit)} solapes)")
@@ -100,9 +108,9 @@ def main() -> int:
           by_layer.get("A-MUROS-TABIQ", 0) >= 40, f"A-MUROS-TABIQ={by_layer.get('A-MUROS-TABIQ', 0)}")
 
     labels = [t for t, _b in texts]
-    sshh = [t for t in labels if t in ("SS.HH. 1", "SS.HH. 2")]
-    check("exactamente 2 banos (SS.HH. 1 + SS.HH. 2)", len(set(sshh)) == 2 and
-          "SS.HH. 3" not in labels, f"{sorted(set(sshh))}")
+    sshh = {t for t in labels if t in ("SS.HH. 1", "SS.HH. 2", "SS.HH. 3")}
+    check("exactamente 3 banos (SS.HH. 1 + 2 + 3)",
+          sshh == {"SS.HH. 1", "SS.HH. 2", "SS.HH. 3"}, f"{sorted(sshh)}")
     check("sin banos duplicados",
           not any("EXISTENTE" in t or "NUEVO" in t for t in labels))
     check("existe NORTH/rotulo N", "N" in labels)
@@ -111,23 +119,43 @@ def main() -> int:
     check("ducha insertada (>=2 refs)", refs.get("A-DUCHA", 0) >= 2,
           f"A-DUCHA={refs.get('A-DUCHA', 0)}")
 
-    for nm in ("ZONIFICACION", "PLANTA BAJA", "PLANTA ALTA"):
+    if wall_dims:
+        import statistics
+
+        med = statistics.median(wall_dims)
+        check("muros de ~0.15 m", 0.13 <= med <= 0.17,
+              f"mediana={med:.3f} m (n={len(wall_dims)})")
+
+    for nm in ("PLANTAS", "ZONIFICACION", "CORTES", "ELEVACIONES", "DETALLES"):
         try:
             _retry(lambda nm=nm: s.layouts.set_active_layout(nm))
+            al = _retry(lambda: as_dynamic(doc.ActiveLayout))
+            media = str(al.CanonicalMediaName)
+            landscape = "297.00_x_210.00" in media
+            check(f"A4 horizontal en {nm}", landscape, media)
             ps = _retry(lambda: as_dynamic(doc.PaperSpace))
             npap = int(_retry(lambda: ps.Count))
             ps_txt = []
+            vp_count = 0
+            vp_scale = None
             for k in range(npap):
                 try:
                     ent = as_dynamic(ps.Item(k))
-                    if str(ent.ObjectName) == "AcDbText":
+                    oname = str(ent.ObjectName)
+                    if oname == "AcDbText":
                         ps_txt.append(str(ent.TextString))
+                    elif oname == "AcDbViewport":
+                        vp_count += 1
+                        vp_scale = float(ent.CustomScale)
                 except Exception:  # noqa: BLE001
                     continue
             tiene = any("UNIVERSIDAD" in t for t in ps_txt) and any("LAMINA" in t for t in ps_txt)
             check(f"membrete UCV en layout {nm}", tiene, f"paperspace={npap}")
+            check(f"un solo viewport en {nm}", vp_count == 1, f"n={vp_count}")
+            check(f"escala 1:150 en {nm}", vp_scale is not None and abs(vp_scale - 1.0 / 150.0) < 1e-4,
+                  f"CustomScale={vp_scale}")
         except Exception as exc:  # noqa: BLE001
-            check(f"membrete UCV en layout {nm}", False, str(exc))
+            check(f"layout {nm}", False, str(exc))
     _retry(lambda: s.layouts.set_active_layout("Model"))
 
     newp = ROOT / "out" / NEW_NAME

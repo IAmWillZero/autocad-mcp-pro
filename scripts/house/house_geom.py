@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 
 def seg_key(axis: str, coord: float, a: float, b: float) -> tuple:
     lo, hi = sorted((round(a, 3), round(b, 3)))
@@ -85,7 +83,20 @@ def subtract(a: float, b: float, cuts: list) -> list:
 
 
 def thickness(kind: str) -> float:
-    return 0.15 if kind == "ext" else 0.10
+    # Espesor de muro uniforme ~0.15 m (pedido de revision).
+    return 0.15
+
+
+# Bloques de puerta a escala real por ancho nominal (definidos en block_library.py).
+DOOR_BLOCKS = {
+    0.70: "A-PUERTA-070",
+    0.80: "A-PUERTA-080",
+    0.90: "A-PUERTA-090",
+    1.00: "A-PUERTA-100",
+    1.10: "A-PUERTA-110",
+    1.20: "A-PUERTA-120",
+}
+SLIDER_BLOCK_200 = "A-PUERTA-CORREDERA-200"
 
 
 def draw_wall_run(s, edge: tuple, openings: list) -> list:
@@ -120,7 +131,6 @@ def draw_openings(s, openings: list) -> dict:
         w = abs(b - a)
         kind = op.get("kind", "door")
         if kind == "door":
-            scale = w / 0.9
             into = str(op.get("into", "+y")).lower()
             if axis == "h":
                 if into in ("+y", "n", "arriba"):
@@ -131,22 +141,34 @@ def draw_openings(s, openings: list) -> dict:
                 pos, rot = [coord, min(a, b)], 90.0
             else:
                 pos, rot = [coord, max(a, b)], 270.0
-            s.blocks.insert_block("A-PUERTA-090", pos, scale=scale, rotation=rot,
-                                  layer="A-PUER-VENT")
+            # Bloque de puerta a escala real por ancho nominal; respaldo 0.90 escalado.
+            block = DOOR_BLOCKS.get(round(w, 2))
+            scale = 1.0 if block else w / 0.9
+            s.blocks.insert_block(block or "A-PUERTA-090", pos, scale=scale,
+                                  rotation=rot, layer="A-PUER-VENT")
             doors += 1
         elif kind == "sliding":
-            offs = (-0.04, 0.04)
-            for o in offs:
+            if abs(round(w, 2) - 2.0) < 1e-9:
+                # Bloque de corredera 2.00 m (dos hojas superpuestas).
                 if axis == "h":
-                    s.geometry.create_line([a, coord + o], [b, coord + o], "bylayer")
+                    pos, rot = [min(a, b), coord], 0.0
                 else:
-                    s.geometry.create_line([coord + o, a], [coord + o, b], "bylayer")
-            if axis == "h":
-                m = (a + b) / 2.0
-                s.geometry.create_line([m, coord - 0.04], [m, coord + 0.04], "bylayer")
+                    pos, rot = [coord, min(a, b)], 90.0
+                s.blocks.insert_block(SLIDER_BLOCK_200, pos, scale=1.0,
+                                      rotation=rot, layer="A-PUER-VENT")
             else:
-                m = (a + b) / 2.0
-                s.geometry.create_line([coord - 0.04, m], [coord + 0.04, m], "bylayer")
+                offs = (-0.04, 0.04)
+                for o in offs:
+                    if axis == "h":
+                        s.geometry.create_line([a, coord + o], [b, coord + o], "bylayer")
+                    else:
+                        s.geometry.create_line([coord + o, a], [coord + o, b], "bylayer")
+                if axis == "h":
+                    m = (a + b) / 2.0
+                    s.geometry.create_line([m, coord - 0.04], [m, coord + 0.04], "bylayer")
+                else:
+                    m = (a + b) / 2.0
+                    s.geometry.create_line([coord - 0.04, m], [coord + 0.04, m], "bylayer")
             windows += 1
         elif kind == "window":
             offs = (-0.05, 0.0, 0.05)
