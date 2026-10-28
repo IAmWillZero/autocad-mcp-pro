@@ -69,10 +69,14 @@ PLANTAS = {
 }
 
 
-def dim(ms: Any, p1: tuple[float, float], p2: tuple[float, float],
-        linea: tuple[float, float], rot: float) -> Any:
-    d = ms.AddDimRotated(variant_point(*p1), variant_point(*p2),
-                         variant_point(*linea), rot)
+def dim(
+    ms: Any,
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    linea: tuple[float, float],
+    rot: float,
+) -> Any:
+    d = ms.AddDimRotated(variant_point(*p1), variant_point(*p2), variant_point(*linea), rot)
     try:
         d.Layer = "A-COTAS"
         d.StyleName = "MCP-ARQ"
@@ -131,22 +135,30 @@ def main() -> int:
         # inferiores: cadena de ejes + cadena de salas + total
         creadas += cadena_h(ms, xe, p["ref_inf"], p["y_inf1"])
         for a, b in p["salas_x"]:
-            dim(ms, (a, p["ref_inf"]), (b, p["ref_inf"]),
-                ((a + b) / 2, p["y_inf2"]), ROT_H)
+            dim(ms, (a, p["ref_inf"]), (b, p["ref_inf"]), ((a + b) / 2, p["y_inf2"]), ROT_H)
             creadas += 1
-        dim(ms, (xe[0], p["ref_inf"]), (xe[-1], p["ref_inf"]),
-            ((xe[0] + xe[-1]) / 2, p["y_total"]), ROT_H)
+        dim(
+            ms,
+            (xe[0], p["ref_inf"]),
+            (xe[-1], p["ref_inf"]),
+            ((xe[0] + xe[-1]) / 2, p["y_total"]),
+            ROT_H,
+        )
         creadas += 1
         # superiores: cadena de ejes
         creadas += cadena_h(ms, xe, p["ref_sup"], p["y_sup"])
         # izquierdas: cadena de ejes + salas + total
         creadas += cadena_v(ms, ye, p["ref_izq"], p["x_izq1"])
         for a, b in p["salas_y"]:
-            dim(ms, (p["ref_izq"], a), (p["ref_izq"], b),
-                (p["x_izq2"], (a + b) / 2), ROT_V)
+            dim(ms, (p["ref_izq"], a), (p["ref_izq"], b), (p["x_izq2"], (a + b) / 2), ROT_V)
             creadas += 1
-        dim(ms, (p["ref_izq"], ye[0]), (p["ref_izq"], ye[-1]),
-            (p["x_total"], (ye[0] + ye[-1]) / 2), ROT_V)
+        dim(
+            ms,
+            (p["ref_izq"], ye[0]),
+            (p["ref_izq"], ye[-1]),
+            (p["x_total"], (ye[0] + ye[-1]) / 2),
+            ROT_V,
+        )
         creadas += 1
         # derechas: cadena de ejes
         creadas += cadena_v(ms, ye, p["ref_der"], p["x_der"])

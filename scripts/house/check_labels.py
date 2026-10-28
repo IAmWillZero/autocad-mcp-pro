@@ -45,13 +45,13 @@ def main() -> int:
         (D.ROOMS2, D.X2, D.Y2, D.OFF2, 0.0),
     ]
     for rooms, X, Y, ox, oy in floors:
-        for (label, i0, i1, j0, j1) in rooms:
+        for label, i0, i1, j0, j1 in rooms:
             x0, x1 = X[i0] + ox, X[i1] + ox
             y0, y1 = Y[j0] + oy, Y[j1] + oy
             area = abs(x1 - x0) * abs(y1 - y0)
             wanted = {label, f"{area:.2f} m2"}
             found = 0
-            for (s, tx0, ty0, tx1, ty1) in texts:
+            for s, tx0, ty0, tx1, ty1 in texts:
                 if s not in wanted:
                     continue
                 cx, cy = (tx0 + tx1) / 2, (ty0 + ty1) / 2
@@ -59,12 +59,7 @@ def main() -> int:
                     continue
                 found += 1
                 checked += 1
-                if (
-                    tx0 < x0 - EPS
-                    or tx1 > x1 + EPS
-                    or ty0 < y0 - EPS
-                    or ty1 > y1 + EPS
-                ):
+                if tx0 < x0 - EPS or tx1 > x1 + EPS or ty0 < y0 - EPS or ty1 > y1 + EPS:
                     problems.append(
                         (label, s, round(tx0, 2), round(ty0, 2), round(tx1, 2), round(ty1, 2))
                     )

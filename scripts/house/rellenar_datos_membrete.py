@@ -71,8 +71,7 @@ def _activate(doc: AutoCADService, name: str) -> None:  # noqa: ANN401
     raise RuntimeError(f"No se pudo activar {name}")
 
 
-def _text(block, value: str, x: float, y: float, height: float = 0.0025,
-          color: int = BLACK):
+def _text(block, value: str, x: float, y: float, height: float = 0.0025, color: int = BLACK):
     e = block.AddText(value, variant_point(x, y), height)
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -87,7 +86,13 @@ def _find_label(block, label_text: str):
             if e.ObjectName != "AcDbMText":
                 continue
             t = str(e.TextString or "")
-            t_clean = t.replace("\\H2x;", "").replace("\\H3x;", "").replace("{", "").replace("}", "").strip()
+            t_clean = (
+                t.replace("\\H2x;", "")
+                .replace("\\H3x;", "")
+                .replace("{", "")
+                .replace("}", "")
+                .strip()
+            )
             if t_clean.startswith(label_text):
                 try:
                     mn, mx = e.GetBoundingBox()

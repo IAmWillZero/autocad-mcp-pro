@@ -75,12 +75,14 @@ def main() -> int:
     V._legend(s, 19.5, 22.6)
     V._north(s, 26.8, 20.6)
     s.layer_tools.set_current_layer("A-TEXTOS")
-    s.geometry.create_text([0.0, 23.45],
-                           "PLANTA BAJA - ZONIFICACION (REVISION 6)", 0.26, "bylayer")
-    s.geometry.create_text([0.0, 22.95],
-                           "TODO EL ANCHO (8.00 m) / CORREDOR RECTO DESDE EL HALL / "
-                           "ESCALERA EN L, 1ER TRAMO JUNTO AL MURO ESTE / SERVICIOS AMPLIADOS",
-                           0.15, "bylayer")
+    s.geometry.create_text([0.0, 23.45], "PLANTA BAJA - ZONIFICACION (REVISION 6)", 0.26, "bylayer")
+    s.geometry.create_text(
+        [0.0, 22.95],
+        "TODO EL ANCHO (8.00 m) / CORREDOR RECTO DESDE EL HALL / "
+        "ESCALERA EN L, 1ER TRAMO JUNTO AL MURO ESTE / SERVICIOS AMPLIADOS",
+        0.15,
+        "bylayer",
+    )
     s.ops.zoom_extents()
     doc.Save()
     print("Guardado:", OUT, flush=True)

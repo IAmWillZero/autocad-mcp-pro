@@ -13,10 +13,7 @@ TERRENO = 8.0 * 23.0
 
 def floor_areas(rooms: list, x: list, y: list) -> list[tuple[str, float]]:
     """Area de cada ambiente (m2) a partir de la grilla modular."""
-    return [
-        (label, abs(x[i1] - x[i0]) * abs(y[j1] - y[j0]))
-        for (label, i0, i1, j0, j1) in rooms
-    ]
+    return [(label, abs(x[i1] - x[i0]) * abs(y[j1] - y[j0])) for (label, i0, i1, j0, j1) in rooms]
 
 
 def _sum(areas: list[tuple[str, float]], keys: set[str]) -> float:
@@ -77,16 +74,18 @@ def openings(open_list: list, x: list, y: list) -> list[dict]:
     for o in open_list:
         a, b = float(o["a"]), float(o["b"])
         dist = a - x[0] if o["axis"] == "h" else a - y[0]
-        out.append({
-            "id": o.get("id", "?"),
-            "room": o.get("room", "?"),
-            "orient": o.get("orient", "?"),
-            "axis": o["axis"],
-            "width": abs(b - a),
-            "sill": float(o.get("sill", 0.0)),
-            "dist": dist,
-            "kind": o["kind"],
-        })
+        out.append(
+            {
+                "id": o.get("id", "?"),
+                "room": o.get("room", "?"),
+                "orient": o.get("orient", "?"),
+                "axis": o["axis"],
+                "width": abs(b - a),
+                "sill": float(o.get("sill", 0.0)),
+                "dist": dist,
+                "kind": o["kind"],
+            }
+        )
     return out
 
 
@@ -110,9 +109,10 @@ _ROOM_ABBR = {
 
 def vanos_rows() -> list[tuple[str, str, float]]:
     """Cuadro de vanos (id ambiente orient. | ancho) para el plano."""
+
     def row(o: dict) -> tuple[str, str, float]:
         room = _ROOM_ABBR.get(o["room"], o["room"])
-        return (f'{o["id"]} {room} {o["orient"]}', "r", o["width"])
+        return (f"{o['id']} {room} {o['orient']}", "r", o["width"])
 
     rows: list[tuple[str, str, float]] = [("1.er PISO", "h", 0.0)]
     for o in openings(U.OPEN1, U.X1, U.Y1):
@@ -135,29 +135,33 @@ def main() -> int:
     for label, ref in d["ref_pb"].items():
         cur = d["pb_ref"].get(label, 0.0)
         print(f"  [ref] {label:26} {cur:12.2f} {ref:11.2f} {cur - ref:+7.2f}")
-    print(f"{'SUBTOTAL 1.er PISO':32} {d['total_pb']:12.2f} "
-          f"{sum(d['ref_pb'].values()):11.2f} {d['total_pb'] - sum(d['ref_pb'].values()):+7.2f}")
+    print(
+        f"{'SUBTOTAL 1.er PISO':32} {d['total_pb']:12.2f} "
+        f"{sum(d['ref_pb'].values()):11.2f} {d['total_pb'] - sum(d['ref_pb'].values()):+7.2f}"
+    )
     print("SEGUNDO PISO")
     for label, area in d["pa"]:
         print(f"{label:32} {area:12.2f}")
     for label, ref in d["ref_pa"].items():
         cur = dict(d["pa"]).get(label, 0.0)
         print(f"  [ref] {label:26} {cur:12.2f} {ref:11.2f} {cur - ref:+7.2f}")
-    print(f"{'SUBTOTAL 2.do PISO':32} {d['total_pa']:12.2f} "
-          f"{sum(d['ref_pa'].values()):11.2f} {d['total_pa'] - sum(d['ref_pa'].values()):+7.2f}")
+    print(
+        f"{'SUBTOTAL 2.do PISO':32} {d['total_pa']:12.2f} "
+        f"{sum(d['ref_pa'].values()):11.2f} {d['total_pa'] - sum(d['ref_pa'].values()):+7.2f}"
+    )
     print("-" * 66)
     print(f"{'AREA TECHADA TOTAL':32} {d['total']:12.2f}")
     print(f"{'TERRENO':32} {d['terreno']:12.2f}")
-    print(f"{'AREA LIBRE (terreno - huella)':32} {d['area_libre']:12.2f} "
-          f"({d['libre_pct']:.2f} %)")
+    print(f"{'AREA LIBRE (terreno - huella)':32} {d['area_libre']:12.2f} ({d['libre_pct']:.2f} %)")
     print("-" * 66)
     print("CUADRO DE VANOS (id / ambiente / orient. / ancho / antepecho / dist.esquina)")
-    for floor, op, x, y in (("1.er PISO", U.OPEN1, U.X1, U.Y1),
-                            ("2.do PISO", U.OPEN2, U.X2, U.Y2)):
+    for floor, op, x, y in (("1.er PISO", U.OPEN1, U.X1, U.Y1), ("2.do PISO", U.OPEN2, U.X2, U.Y2)):
         for o in openings(op, x, y):
-            print(f"  {floor:9} {o['id']:5} {o['room']:22} {o['orient']:8} "
-                  f"{o['width']:5.2f} x alt.antepecho {o['sill']:.2f}  "
-                  f"a {o['dist']:.2f} m de esquina")
+            print(
+                f"  {floor:9} {o['id']:5} {o['room']:22} {o['orient']:8} "
+                f"{o['width']:5.2f} x alt.antepecho {o['sill']:.2f}  "
+                f"a {o['dist']:.2f} m de esquina"
+            )
     return 0
 
 

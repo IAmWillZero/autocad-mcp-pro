@@ -52,8 +52,7 @@ def main(argv: list[str]) -> int:
     layout.CanonicalMediaName = "ISO_full_bleed_A3_(420.00_x_297.00_MM)"
     layout.PlotType = 4  # acWindow
     layout.SetWindowToPlot(
-        win32com.client.VARIANT(
-            pythoncom.VT_ARRAY | pythoncom.VT_R8, [-7.0, -0.5, 26.0, 25.0])
+        win32com.client.VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [-7.0, -0.5, 26.0, 25.0])
     )
     layout.UseStandardScale = False
     layout.SetCustomScale(1.0, 1.0)  # ventana ajustada? no: escala real

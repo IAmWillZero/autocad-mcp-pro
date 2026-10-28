@@ -53,8 +53,15 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         print("aviso BACKGROUNDPLOT:", exc)
 
-    pdf_pc3 = (str(Path(os.environ["APPDATA"]) / "Autodesk" / "AutoCAD 2026" / "R25.1"
-                   / "enu" / "plotters" / "DWG To PDF.pc3"))
+    pdf_pc3 = str(
+        Path(os.environ["APPDATA"])
+        / "Autodesk"
+        / "AutoCAD 2026"
+        / "R25.1"
+        / "enu"
+        / "plotters"
+        / "DWG To PDF.pc3"
+    )
     for nm in ("PLANTAS", "ZONIFICACION", "CORTES", "ELEVACIONES", "DETALLES"):
         out = str(PDF_DIR / f"UCV_Magisterial_230_{nm.replace(' ', '_')}.pdf")
         try:
@@ -64,8 +71,9 @@ def main() -> int:
             al = as_dynamic(doc.ActiveLayout)
             try:
                 medias = [str(m) for m in al.GetCanonicalMediaNames()]
-                pick = next((m for m in medias
-                             if "A4" in m.upper() and "297.00_x_210.00" in m), None)
+                pick = next(
+                    (m for m in medias if "A4" in m.upper() and "297.00_x_210.00" in m), None
+                )
                 if pick:
                     al.CanonicalMediaName = pick
             except Exception as exc:  # noqa: BLE001

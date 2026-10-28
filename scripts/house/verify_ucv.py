@@ -64,8 +64,9 @@ def main() -> int:
             by_type[oname] += 1
             if oname == "AcDbText":
                 lo, hi = e.GetBoundingBox()
-                texts.append((str(e.TextString),
-                              (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1]))))
+                texts.append(
+                    (str(e.TextString), (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1])))
+                )
             elif oname == "AcDbBlockReference":
                 refs[str(e.Name)] += 1
             elif oname == "AcDbPolyline" and lay == "A-MUROS-CARGA":
@@ -88,43 +89,58 @@ def main() -> int:
 
     def overlaps() -> list:
         def ov(a, b, pad=0.02):
-            return not (a[2] + pad <= b[0] or b[2] + pad <= a[0]
-                        or a[3] + pad <= b[1] or b[3] + pad <= a[1])
+            return not (
+                a[2] + pad <= b[0] or b[2] + pad <= a[0] or a[3] + pad <= b[1] or b[3] + pad <= a[1]
+            )
+
         # Solo la zona de planos/zonificacion (x < 66) para no medir las laminas
         # de cortes/elevaciones/detalles, que reutilizan etiquetas.
         plan = [(t, b) for (t, b) in texts if b[0] < 66.0]
-        return [(plan[i][0], plan[j][0])
-                for i in range(len(plan)) for j in range(i + 1, len(plan))
-                if ov(plan[i][1], plan[j][1])]
+        return [
+            (plan[i][0], plan[j][0])
+            for i in range(len(plan))
+            for j in range(i + 1, len(plan))
+            if ov(plan[i][1], plan[j][1])
+        ]
 
     hit = overlaps()
     check("sin solapes de texto", not hit, f"({len(texts)} textos, {len(hit)} solapes)")
     for h in hit[:10]:
         print("    solape:", h)
 
-    check("cotas completas (>=30)", by_layer.get("A-COTAS", 0) >= 30,
-          f"A-COTAS={by_layer.get('A-COTAS', 0)}")
-    check("una sola escalera por planta (muros tabique >= 40)",
-          by_layer.get("A-MUROS-TABIQ", 0) >= 40, f"A-MUROS-TABIQ={by_layer.get('A-MUROS-TABIQ', 0)}")
+    check(
+        "cotas completas (>=30)",
+        by_layer.get("A-COTAS", 0) >= 30,
+        f"A-COTAS={by_layer.get('A-COTAS', 0)}",
+    )
+    check(
+        "una sola escalera por planta (muros tabique >= 40)",
+        by_layer.get("A-MUROS-TABIQ", 0) >= 40,
+        f"A-MUROS-TABIQ={by_layer.get('A-MUROS-TABIQ', 0)}",
+    )
 
     labels = [t for t, _b in texts]
     sshh = {t for t in labels if t in ("SS.HH. 1", "SS.HH. 2", "SS.HH. 3")}
-    check("exactamente 3 banos (SS.HH. 1 + 2 + 3)",
-          sshh == {"SS.HH. 1", "SS.HH. 2", "SS.HH. 3"}, f"{sorted(sshh)}")
-    check("sin banos duplicados",
-          not any("EXISTENTE" in t or "NUEVO" in t for t in labels))
+    check(
+        "exactamente 3 banos (SS.HH. 1 + 2 + 3)",
+        sshh == {"SS.HH. 1", "SS.HH. 2", "SS.HH. 3"},
+        f"{sorted(sshh)}",
+    )
+    check("sin banos duplicados", not any("EXISTENTE" in t or "NUEVO" in t for t in labels))
     check("existe NORTH/rotulo N", "N" in labels)
     check("existe cuadro de areas", "CUADRO DE AREAS" in labels)
     check("existe cuadro de vanos", "CUADRO DE VANOS" in labels)
-    check("ducha insertada (>=2 refs)", refs.get("A-DUCHA", 0) >= 2,
-          f"A-DUCHA={refs.get('A-DUCHA', 0)}")
+    check(
+        "ducha insertada (>=2 refs)",
+        refs.get("A-DUCHA", 0) >= 2,
+        f"A-DUCHA={refs.get('A-DUCHA', 0)}",
+    )
 
     if wall_dims:
         import statistics
 
         med = statistics.median(wall_dims)
-        check("muros de ~0.15 m", 0.13 <= med <= 0.17,
-              f"mediana={med:.3f} m (n={len(wall_dims)})")
+        check("muros de ~0.15 m", 0.13 <= med <= 0.17, f"mediana={med:.3f} m (n={len(wall_dims)})")
 
     for nm in ("PLANTAS", "ZONIFICACION", "CORTES", "ELEVACIONES", "DETALLES"):
         try:
@@ -152,15 +168,21 @@ def main() -> int:
             tiene = any("UNIVERSIDAD" in t for t in ps_txt) and any("LAMINA" in t for t in ps_txt)
             check(f"membrete UCV en layout {nm}", tiene, f"paperspace={npap}")
             check(f"un solo viewport en {nm}", vp_count == 1, f"n={vp_count}")
-            check(f"escala 1:150 en {nm}", vp_scale is not None and abs(vp_scale - 1.0 / 150.0) < 1e-4,
-                  f"CustomScale={vp_scale}")
+            check(
+                f"escala 1:150 en {nm}",
+                vp_scale is not None and abs(vp_scale - 1.0 / 150.0) < 1e-4,
+                f"CustomScale={vp_scale}",
+            )
         except Exception as exc:  # noqa: BLE001
             check(f"layout {nm}", False, str(exc))
     _retry(lambda: s.layouts.set_active_layout("Model"))
 
     newp = ROOT / "out" / NEW_NAME
-    check("archivo NUEVO guardado", newp.exists(),
-          f"{os.path.getsize(newp) if newp.exists() else 0} bytes")
+    check(
+        "archivo NUEVO guardado",
+        newp.exists(),
+        f"{os.path.getsize(newp) if newp.exists() else 0} bytes",
+    )
 
     print("\nFASE 9:", "PASS" if ok else "FAIL")
     return 0 if ok else 2

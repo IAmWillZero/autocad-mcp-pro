@@ -73,8 +73,12 @@ def entity_info(e) -> dict:
         elif t in ("Line", "Polyline", "LWPolyline", "Arc", "Circle", "Hatch"):
             try:
                 mn, mx = e.GetBoundingBox()
-                info["bbox"] = [round(float(mn[0]), 4), round(float(mn[1]), 4),
-                                round(float(mx[0]), 4), round(float(mx[1]), 4)]
+                info["bbox"] = [
+                    round(float(mn[0]), 4),
+                    round(float(mn[1]), 4),
+                    round(float(mx[0]), 4),
+                    round(float(mx[1]), 4),
+                ]
             except Exception:  # noqa: BLE001
                 pass
         elif t == "BlockReference":
@@ -83,8 +87,12 @@ def entity_info(e) -> dict:
             info["at"] = [round(float(ip[0]), 4), round(float(ip[1]), 4)]
             try:
                 mn, mx = e.GetBoundingBox()
-                info["bbox"] = [round(float(mn[0]), 4), round(float(mn[1]), 4),
-                                round(float(mx[0]), 4), round(float(mx[1]), 4)]
+                info["bbox"] = [
+                    round(float(mn[0]), 4),
+                    round(float(mn[1]), 4),
+                    round(float(mx[0]), 4),
+                    round(float(mx[1]), 4),
+                ]
             except Exception:  # noqa: BLE001
                 pass
         elif t == "Table":
@@ -150,9 +158,13 @@ def main() -> int:
         try:
             lay = doc.Layers.Item(i)
             report["layers"].append(
-                {"name": str(lay.Name), "color": int(lay.Color),
-                 "on": bool(lay.LayerOn), "plot": bool(lay.Plottable),
-                 "frozen": bool(lay.Freeze)}
+                {
+                    "name": str(lay.Name),
+                    "color": int(lay.Color),
+                    "on": bool(lay.LayerOn),
+                    "plot": bool(lay.Plottable),
+                    "frozen": bool(lay.Freeze),
+                }
             )
         except Exception:  # noqa: BLE001
             pass
@@ -191,8 +203,7 @@ def main() -> int:
         except Exception:  # noqa: BLE001
             pass
         try:
-            entry["paper_w"] = round(_f(layout.PlotPaperSize[0], 0.0), 4) \
-                if False else None
+            entry["paper_w"] = round(_f(layout.PlotPaperSize[0], 0.0), 4) if False else None
             entry["media"] = str(layout.CanonicalMediaName)
             entry["paper_units"] = int(layout.PaperUnits)
             entry["plot_rotation"] = str(layout.PlotRotation)
@@ -216,10 +227,14 @@ def main() -> int:
             if str(e.ObjectName) in ("AcDbText", "AcDbMText"):
                 try:
                     ip = e.InsertionPoint
-                    texts.append({"t": str(e.TextString)[:90],
-                                  "x": round(float(ip[0]), 2),
-                                  "y": round(float(ip[1]), 2),
-                                  "layer": str(e.Layer)})
+                    texts.append(
+                        {
+                            "t": str(e.TextString)[:90],
+                            "x": round(float(ip[0]), 2),
+                            "y": round(float(ip[1]), 2),
+                            "layer": str(e.Layer),
+                        }
+                    )
                 except Exception:  # noqa: BLE001
                     pass
     except Exception:  # noqa: BLE001
@@ -227,14 +242,12 @@ def main() -> int:
     report["model_texts"] = texts
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text(json.dumps(report, indent=1, ensure_ascii=False),
-                   encoding="utf-8")
+    OUT.write_text(json.dumps(report, indent=1, ensure_ascii=False), encoding="utf-8")
 
     print("doc:", report["active"])
     print("layouts:", list(report["layouts"].keys()))
     print("model_count:", report["model_count"], "| texts:", len(texts))
-    print("blocks:", len(report["block_defs"]),
-          "| insertados:", len(used))
+    print("blocks:", len(report["block_defs"]), "| insertados:", len(used))
     print("reporte:", OUT)
     return 0
 

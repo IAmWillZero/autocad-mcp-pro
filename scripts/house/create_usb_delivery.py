@@ -37,14 +37,44 @@ WHITE = 7
 PAPER = 0
 
 LOGO_POLYS = [
-    [229.222346075916, -47.401379218187, 268.478965085991, -49.012225331199,
-     268.478965085991, -53.368825654130, 229.222346075916, -47.401379218187],
-    [229.222346075912, -47.401379218182, 268.432726176950, -57.307440275650,
-     268.432726176950, -77.176825260045, 263.346370946074, -85.872835455622,
-     263.346370946078, -60.433182871121, 229.222346075912, -47.401379218182],
-    [229.222346075912, -47.401379218182, 258.807402759940, -63.354031642844,
-     258.807402759940, -88.666439703912, 253.578259830000, -93.317433149806,
-     253.578259830000, -65.934055057211, 229.222346075858, -47.401379218142],
+    [
+        229.222346075916,
+        -47.401379218187,
+        268.478965085991,
+        -49.012225331199,
+        268.478965085991,
+        -53.368825654130,
+        229.222346075916,
+        -47.401379218187,
+    ],
+    [
+        229.222346075912,
+        -47.401379218182,
+        268.432726176950,
+        -57.307440275650,
+        268.432726176950,
+        -77.176825260045,
+        263.346370946074,
+        -85.872835455622,
+        263.346370946078,
+        -60.433182871121,
+        229.222346075912,
+        -47.401379218182,
+    ],
+    [
+        229.222346075912,
+        -47.401379218182,
+        258.807402759940,
+        -63.354031642844,
+        258.807402759940,
+        -88.666439703912,
+        253.578259830000,
+        -93.317433149806,
+        253.578259830000,
+        -65.934055057211,
+        229.222346075858,
+        -47.401379218142,
+    ],
 ]
 
 
@@ -93,8 +123,7 @@ def _line(block, x0: float, y0: float, x1: float, y1: float, color: int = RED):
     return e
 
 
-def _text(block, value: str, x: float, y: float, height: float,
-          color: int = BLACK):
+def _text(block, value: str, x: float, y: float, height: float, color: int = BLACK):
     e = block.AddText(value, variant_point(x, y), height)
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -116,8 +145,9 @@ def _poly(block, points: list[tuple[float, float]]):
     return e
 
 
-def _draw_sheet(block, width: float, height: float, sheet: str,
-                scale_text: str, subtitle: str) -> None:
+def _draw_sheet(
+    block, width: float, height: float, sheet: str, scale_text: str, subtitle: str
+) -> None:
     """Marco y cajete UCV con bordes del tamanio exacto de la hoja."""
     for a in (
         (0.005, 0.005, width - 0.005, 0.005),
@@ -137,14 +167,11 @@ def _draw_sheet(block, width: float, height: float, sheet: str,
     tx = 0.015 - s * 229.2223460759
     ty = 0.013 - s * (-93.3174331498)
     for flat in LOGO_POLYS:
-        _poly(block, [(tx + s * flat[i], ty + s * flat[i + 1])
-                      for i in range(0, len(flat), 2)])
+        _poly(block, [(tx + s * flat[i], ty + s * flat[i + 1]) for i in range(0, len(flat), 2)])
     _text(block, "UNIVERSIDAD CESAR VALLEJO", 0.02945, 0.01385, 0.0018, RED)
     _text(block, "VIVIENDA UCV MAGISTERIAL 230", 0.057, 0.028, 0.0030, BLUE)
-    _text(block, "PLANO DE DISTRIBUCION ARQUITECTONICA", 0.057, 0.022,
-          0.0023)
-    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1",
-          0.057, 0.016, 0.0018)
+    _text(block, "PLANO DE DISTRIBUCION ARQUITECTONICA", 0.057, 0.022, 0.0023)
+    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1", 0.057, 0.016, 0.0018)
     _text(block, "UNIDADES: METROS | DWGUNITS: METROS", 0.057, 0.012, 0.0017)
     ix = width - 0.100
     _text(block, f"LAMINA: {sheet}", ix + 0.005, 0.028, 0.0025, BLUE)
@@ -156,8 +183,15 @@ def _draw_sheet(block, width: float, height: float, sheet: str,
 
 def _page_setup(doc, layout, width: float, height: float, media: str) -> None:
     pc3 = str(
-        Path.home() / "AppData" / "Roaming" / "Autodesk" / "AutoCAD 2026"
-        / "R25.1" / "enu" / "plotters" / "DWG To PDF.pc3"
+        Path.home()
+        / "AppData"
+        / "Roaming"
+        / "Autodesk"
+        / "AutoCAD 2026"
+        / "R25.1"
+        / "enu"
+        / "plotters"
+        / "DWG To PDF.pc3"
     )
     layout.ConfigName = pc3
     try:
@@ -190,8 +224,9 @@ def _clean_viewports(block) -> None:
             pass
 
 
-def _copy_model_area(doc, block, x0: float, y0: float, x1: float, y1: float,
-                     scale: float, dx: float, dy: float) -> None:
+def _copy_model_area(
+    doc, block, x0: float, y0: float, x1: float, y1: float, scale: float, dx: float, dy: float
+) -> None:
     """Copia al espacio papel los objetos del modelo dentro del area dada,
     escalados y desplazados a la posicion (dx, dy) del papel."""
     sources = []
@@ -283,19 +318,58 @@ def main() -> int:
     # (nombre, media, ancho_m, alto_m, (x0, y0, x1, y1) area del modelo,
     #  scale, centro_papel_x, centro_papel_y, sheet, escala_texto, subtitulo)
     sheets = (
-        ("A4_PB", "ISO_full_bleed_A4_(210.00_x_297.00_MM)", 0.210, 0.297,
-         (-0.5, 0.0, 8.5, 23.0), 0.010, 0.105, 0.159, "A-01", "PB 1:100",
-         "PLANTA BAJA | A4 VERTICAL"),
-        ("A4_PA", "ISO_full_bleed_A4_(210.00_x_297.00_MM)", 0.210, 0.297,
-         (14.5, 0.0, 23.5, 23.0), 0.010, 0.105, 0.159, "A-02", "PA 1:100",
-         "PLANTA ALTA | A4 VERTICAL"),
-        ("A3_COLOR", "ISO_full_bleed_A3_(420.00_x_297.00_MM)", 0.420, 0.297,
-         (-0.5, 0.0, 23.5, 23.0), 0.010, 0.150, 0.159, "A-03",
-         "PB+PA 1:100 / ZON. 1:250", "PLANTAS + ZONIFICACION | A3 COLOR"),
-        ("A3_FULL", "ISO_full_bleed_A3_(420.00_x_297.00_MM)", 0.420, 0.297,
-         (-4.5, 0.0, 70.5, 26.0), 0.005, 0.210, 0.159, "A-04",
-         "WINDOW COMPLETO 1:200",
-         "PLANTAS + ZONIFICACION + CUADROS | A3 FULL"),
+        (
+            "A4_PB",
+            "ISO_full_bleed_A4_(210.00_x_297.00_MM)",
+            0.210,
+            0.297,
+            (-0.5, 0.0, 8.5, 23.0),
+            0.010,
+            0.105,
+            0.159,
+            "A-01",
+            "PB 1:100",
+            "PLANTA BAJA | A4 VERTICAL",
+        ),
+        (
+            "A4_PA",
+            "ISO_full_bleed_A4_(210.00_x_297.00_MM)",
+            0.210,
+            0.297,
+            (14.5, 0.0, 23.5, 23.0),
+            0.010,
+            0.105,
+            0.159,
+            "A-02",
+            "PA 1:100",
+            "PLANTA ALTA | A4 VERTICAL",
+        ),
+        (
+            "A3_COLOR",
+            "ISO_full_bleed_A3_(420.00_x_297.00_MM)",
+            0.420,
+            0.297,
+            (-0.5, 0.0, 23.5, 23.0),
+            0.010,
+            0.150,
+            0.159,
+            "A-03",
+            "PB+PA 1:100 / ZON. 1:250",
+            "PLANTAS + ZONIFICACION | A3 COLOR",
+        ),
+        (
+            "A3_FULL",
+            "ISO_full_bleed_A3_(420.00_x_297.00_MM)",
+            0.420,
+            0.297,
+            (-4.5, 0.0, 70.5, 26.0),
+            0.005,
+            0.210,
+            0.159,
+            "A-04",
+            "WINDOW COMPLETO 1:200",
+            "PLANTAS + ZONIFICACION + CUADROS | A3 FULL",
+        ),
     )
     for name, media, w, h, model_area, scale, cx, cy, sheet, scale_text, subtitle in sheets:
         layout = copy_doc.Layouts.Add(name)
@@ -315,8 +389,7 @@ def main() -> int:
         dx = cx - (mx0 + mx1) / 2 * final_scale
         dy = cy - (my0 + my1) / 2 * final_scale
 
-        _copy_model_area(copy_doc, block, mx0, my0, mx1, my1,
-                         final_scale, dx, dy)
+        _copy_model_area(copy_doc, block, mx0, my0, mx1, my1, final_scale, dx, dy)
 
     copy_doc.ActiveLayout = copy_doc.Layouts.Item("Model")
     copy_doc.SetVariable("CTAB", "Model")

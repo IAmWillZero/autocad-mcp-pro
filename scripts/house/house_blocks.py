@@ -68,4 +68,3 @@ def define_blocks(s) -> None:
     copa = s.geometry.create_circle([0.0, 0.0], 0.70, "bylayer")
     tronco = s.geometry.create_circle([0.0, 0.0], 0.10, "bylayer")
     _mk(s, "A-ARBOL", [_h(copa), _h(tronco)])
-

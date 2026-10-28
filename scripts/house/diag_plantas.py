@@ -103,17 +103,17 @@ def main() -> int:
                     a = e.StartPoint
                     b = e.EndPoint
                     seg = (
-                        round(float(a[0]), 3), round(float(a[1]), 3),
-                        round(float(b[0]), 3), round(float(b[1]), 3),
+                        round(float(a[0]), 3),
+                        round(float(a[1]), 3),
+                        round(float(b[0]), 3),
+                        round(float(b[1]), 3),
                     )
                 elif t == "AcDbPolyline":
                     seg = tuple(round(float(v), 3) for v in e.Coordinates)
                 else:
                     seg = ()
                 xmin = min(seg[0::2]) if seg else 0.0
-                (walls_pb if xmin < 14.0 else walls_pa).append(
-                    (str(e.Handle), lay, t, seg)
-                )
+                (walls_pb if xmin < 14.0 else walls_pa).append((str(e.Handle), lay, t, seg))
         except Exception:  # noqa: BLE001
             continue
 

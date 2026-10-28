@@ -61,8 +61,7 @@ def _layer(doc: AutoCADService, name: str, color: int) -> None:  # noqa: ANN401
         pass
 
 
-def _line(block, x0: float, y0: float, x1: float, y1: float,
-          color: int = RED):
+def _line(block, x0: float, y0: float, x1: float, y1: float, color: int = RED):
     e = block.AddLine(variant_point(x0, y0), variant_point(x1, y1))
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -73,8 +72,7 @@ def _line(block, x0: float, y0: float, x1: float, y1: float,
     return e
 
 
-def _text(block, value: str, x: float, y: float, height: float,
-          color: int = BLACK):
+def _text(block, value: str, x: float, y: float, height: float, color: int = BLACK):
     e = block.AddText(value, variant_point(x, y), height)
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -119,18 +117,21 @@ def _draw_membrete_a4(block, sheet: str, escala: str, subtitulo: str) -> None:
     s = 0.00030
     tx = 0.015 - s * 229.2223460759
     ty = h - 0.013 - s * (-93.3174331498)
-    _poly(block, [
-        (tx - 0.5 * s, ty + 0.0 * s),
-        (tx - 0.45 * s, ty + 1.30 * s),
-        (tx - 0.30 * s, ty + 1.75 * s),
-        (tx - 0.10 * s, ty + 1.95 * s),
-        (tx + 0.00 * s, ty + 2.05 * s),
-        (tx + 0.10 * s, ty + 1.95 * s),
-        (tx + 0.30 * s, ty + 1.75 * s),
-        (tx + 0.45 * s, ty + 1.30 * s),
-        (tx + 0.50 * s, ty + 0.0 * s),
-        (tx - 0.50 * s, ty + 0.0 * s),
-    ])
+    _poly(
+        block,
+        [
+            (tx - 0.5 * s, ty + 0.0 * s),
+            (tx - 0.45 * s, ty + 1.30 * s),
+            (tx - 0.30 * s, ty + 1.75 * s),
+            (tx - 0.10 * s, ty + 1.95 * s),
+            (tx + 0.00 * s, ty + 2.05 * s),
+            (tx + 0.10 * s, ty + 1.95 * s),
+            (tx + 0.30 * s, ty + 1.75 * s),
+            (tx + 0.45 * s, ty + 1.30 * s),
+            (tx + 0.50 * s, ty + 0.0 * s),
+            (tx - 0.50 * s, ty + 0.0 * s),
+        ],
+    )
     _arc(block, tx, ty + 0.85 * s, 0.42 * s, 180.0, 0.0)
     _arc(block, tx, ty + 0.95 * s, 0.30 * s, 180.0, 0.0)
     _arc(block, tx, ty + 1.05 * s, 0.18 * s, 180.0, 0.0)
@@ -144,10 +145,8 @@ def _draw_membrete_a4(block, sheet: str, escala: str, subtitulo: str) -> None:
     _text(block, "UNIVERSIDAD CESAR VALLEJO", 0.034, h - 0.0135, 0.0018, RED)
     _text(block, "VIVIENDA UCV MAGISTERIAL 230", 0.057, h - 0.028, 0.0030, BLUE)
     _text(block, subtitulo, 0.057, h - 0.022, 0.0023)
-    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1",
-          0.057, h - 0.016, 0.0018)
-    _text(block, "UNIDADES: METROS | DWGUNITS: METROS", 0.057, h - 0.012,
-          0.0017)
+    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1", 0.057, h - 0.016, 0.0018)
+    _text(block, "UNIDADES: METROS | DWGUNITS: METROS", 0.057, h - 0.012, 0.0017)
     ix = w - 0.100
     _text(block, f"LAMINA: {sheet}", ix + 0.005, h - 0.028, 0.0025, BLUE)
     _text(block, f"ESCALA: {escala}", ix + 0.005, h - 0.022, 0.0020)
@@ -155,8 +154,7 @@ def _draw_membrete_a4(block, sheet: str, escala: str, subtitulo: str) -> None:
     _text(block, "A-010 / A-020", ix + 0.005, h - 0.012, 0.0018)
 
 
-def _arc(block, cx: float, cy: float, r: float, a0: float, a1: float,
-         color: int = RED):
+def _arc(block, cx: float, cy: float, r: float, a0: float, a1: float, color: int = RED):
     e = block.AddArc(variant_point(cx, cy, 0.0), r, a0, a1)
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -187,18 +185,21 @@ def _draw_membrete_a3(block, sheet: str, escala: str, subtitulo: str) -> None:
     s = 0.00030
     tx = 0.015 - s * 229.2223460759
     ty = h - 0.013 - s * (-93.3174331498)
-    _poly(block, [
-        (tx - 0.5 * s, ty + 0.0 * s),
-        (tx - 0.45 * s, ty + 1.30 * s),
-        (tx - 0.30 * s, ty + 1.75 * s),
-        (tx - 0.10 * s, ty + 1.95 * s),
-        (tx + 0.00 * s, ty + 2.05 * s),
-        (tx + 0.10 * s, ty + 1.95 * s),
-        (tx + 0.30 * s, ty + 1.75 * s),
-        (tx + 0.45 * s, ty + 1.30 * s),
-        (tx + 0.50 * s, ty + 0.0 * s),
-        (tx - 0.50 * s, ty + 0.0 * s),
-    ])
+    _poly(
+        block,
+        [
+            (tx - 0.5 * s, ty + 0.0 * s),
+            (tx - 0.45 * s, ty + 1.30 * s),
+            (tx - 0.30 * s, ty + 1.75 * s),
+            (tx - 0.10 * s, ty + 1.95 * s),
+            (tx + 0.00 * s, ty + 2.05 * s),
+            (tx + 0.10 * s, ty + 1.95 * s),
+            (tx + 0.30 * s, ty + 1.75 * s),
+            (tx + 0.45 * s, ty + 1.30 * s),
+            (tx + 0.50 * s, ty + 0.0 * s),
+            (tx - 0.50 * s, ty + 0.0 * s),
+        ],
+    )
     _arc(block, tx, ty + 0.85 * s, 0.42 * s, 180.0, 0.0)
     _arc(block, tx, ty + 0.95 * s, 0.30 * s, 180.0, 0.0)
     _arc(block, tx, ty + 1.05 * s, 0.18 * s, 180.0, 0.0)
@@ -212,10 +213,8 @@ def _draw_membrete_a3(block, sheet: str, escala: str, subtitulo: str) -> None:
     _text(block, "UNIVERSIDAD CESAR VALLEJO", 0.034, h - 0.0135, 0.0018, RED)
     _text(block, "VIVIENDA UCV MAGISTERIAL 230", 0.057, h - 0.028, 0.0030, BLUE)
     _text(block, subtitulo, 0.057, h - 0.022, 0.0023)
-    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1",
-          0.057, h - 0.016, 0.0018)
-    _text(block, "UNIDADES: METROS | DWGUNITS: METROS", 0.057, h - 0.012,
-          0.0017)
+    _text(block, "INGENIERIA CIVIL - EXPRESION GRAFICA - GRUPO A1", 0.057, h - 0.016, 0.0018)
+    _text(block, "UNIDADES: METROS | DWGUNITS: METROS", 0.057, h - 0.012, 0.0017)
     ix = w - 0.100
     _text(block, f"LAMINA: {sheet}", ix + 0.005, h - 0.028, 0.0025, BLUE)
     _text(block, f"ESCALA: {escala}", ix + 0.005, h - 0.022, 0.0020)

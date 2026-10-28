@@ -59,9 +59,7 @@ def _plot_pdf(doc: Any, pdf: Path) -> Path:
         candidates = [
             pdf,
             pdf.with_name(f"{pdf.stem}-3D{pdf.suffix}"),
-            pdf.with_name(
-                f"{pdf.stem}-{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}{pdf.suffix}"
-            ),
+            pdf.with_name(f"{pdf.stem}-{time.strftime('%Y%m%d-%H%M%S')}-{os.getpid()}{pdf.suffix}"),
         ]
         for candidate in candidates:
             if candidate.exists():
@@ -148,13 +146,19 @@ def _verify_golden_gate(service: AutoCADService, result: dict[str, Any]) -> dict
 
     checks = [
         _check("solidos >= 2000", int(report.get("count") or 0) >= 2000, str(report.get("count"))),
-        _check("volumen > 0", float(report.get("total_volume") or 0) > 0, str(report.get("total_volume"))),
+        _check(
+            "volumen > 0",
+            float(report.get("total_volume") or 0) > 0,
+            str(report.get("total_volume")),
+        ),
         _check(
             "longitud 2737 m",
             abs(float(size[0]) - 2737.0) <= 2.0,
             f"{float(size[0]):.2f} m",
         ),
-        _check("ancho 44 m (con fenders)", abs(float(size[1]) - 44.0) <= 5.0, f"{float(size[1]):.2f} m"),
+        _check(
+            "ancho 44 m (con fenders)", abs(float(size[1]) - 44.0) <= 5.0, f"{float(size[1]):.2f} m"
+        ),
         _check("altura 244.6 m", abs(float(size[2]) - 244.6) <= 5.0, f"{float(size[2]):.2f} m"),
         _check("torres a 227 m", abs(tower_top - 229.6) <= 4.0, f"{tower_top:.2f} m"),
         _check("cables presentes", len(cables) > 400, str(len(cables))),
@@ -207,32 +211,32 @@ def _write_report(
         files.append(f"- PDF: `{plotted}` ({plotted.stat().st_size:,} bytes)")
     files.append(f"- JSON: `{out_dir / 'Puente-Golden-Gate.json'}`")
 
-    text = f"""# {result.get('bridge', 'Puente')} - modelo 3D
+    text = f"""# {result.get("bridge", "Puente")} - modelo 3D
 
-Generado: {time.strftime('%Y-%m-%d %H:%M:%S')} en {elapsed:.1f} s
+Generado: {time.strftime("%Y-%m-%d %H:%M:%S")} en {elapsed:.1f} s
 
 ## Dimensiones
 
 | Dato | Valor |
 |---|---|
-| Longitud total | {spec.get('total_length', 0):,.2f} m |
-| Luz principal | {spec.get('main_span', 0):,.2f} m |
-| Vanos laterales | {spec.get('side_span', 0):,.2f} m |
-| Altura de torres | {spec.get('tower_height', 0):,.2f} m |
-| Calado | {spec.get('clearance', 0):,.2f} m |
-| Ancho de tablero | {spec.get('deck_width', 0):,.2f} m |
-| Canto de tablero | {spec.get('deck_depth', 0):,.2f} m |
-| Flecha de cable | {spec.get('cable_sag', 0):,.2f} m |
-| Diametro de cable | {spec.get('cable_diameter', 0):,.2f} m |
-| Detalle metalico | {result.get('detail', 'none')} |
-| Pernos/rivets | {result.get('fasteners', 0):,} |
+| Longitud total | {spec.get("total_length", 0):,.2f} m |
+| Luz principal | {spec.get("main_span", 0):,.2f} m |
+| Vanos laterales | {spec.get("side_span", 0):,.2f} m |
+| Altura de torres | {spec.get("tower_height", 0):,.2f} m |
+| Calado | {spec.get("clearance", 0):,.2f} m |
+| Ancho de tablero | {spec.get("deck_width", 0):,.2f} m |
+| Canto de tablero | {spec.get("deck_depth", 0):,.2f} m |
+| Flecha de cable | {spec.get("cable_sag", 0):,.2f} m |
+| Diametro de cable | {spec.get("cable_diameter", 0):,.2f} m |
+| Detalle metalico | {result.get("detail", "none")} |
+| Pernos/rivets | {result.get("fasteners", 0):,} |
 
 ## Resultado
 
-- Solidos: **{result.get('solids', 0)}**
-- Volumen modelado: **{result.get('volume', 0):,.2f} m3**
-- Masa estimada: **{result.get('mass', 0):,.2f} t**
-- Extents: {result.get('extents')}
+- Solidos: **{result.get("solids", 0)}**
+- Volumen modelado: **{result.get("volume", 0):,.2f} m3**
+- Masa estimada: **{result.get("mass", 0):,.2f} t**
+- Extents: {result.get("extents")}
 
 ## Materiales
 
@@ -350,9 +354,7 @@ def run(
         return 0
 
     # Rotulos y cuadro de datos reales.
-    service.geometry.create_text(
-        [-1300, -60, 0], "GOLDEN GATE BRIDGE - MODELO 3D", 26.0, "bylayer"
-    )
+    service.geometry.create_text([-1300, -60, 0], "GOLDEN GATE BRIDGE - MODELO 3D", 26.0, "bylayer")
     service.geometry.create_text(
         [-1300, -95, 0],
         "Luz principal 1280 m - Torres 227 m - Calado 67 m - Longitud 2737 m",
@@ -390,9 +392,7 @@ def run(
     try:
         doc = service.conn.doc
         viewport = doc.ActiveViewport
-        viewport.Direction = VARIANT(
-            pythoncom.VT_ARRAY | pythoncom.VT_R8, [1.0, -1.0, 0.8]
-        )
+        viewport.Direction = VARIANT(pythoncom.VT_ARRAY | pythoncom.VT_R8, [1.0, -1.0, 0.8])
         doc.ActiveViewport = viewport
         doc.Regen(1)
         service.conn.app.ZoomExtents()

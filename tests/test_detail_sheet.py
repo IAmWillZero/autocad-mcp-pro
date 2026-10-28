@@ -9,6 +9,7 @@ from autocad_mcp.features.detail_sheet import (
     CELL_WIDTH,
     DEFAULT_ORIGIN,
     DETAIL_LIBRARY,
+    DetailSheetTools,
     _item_points,
     hatch_lines,
     paper_size,
@@ -99,8 +100,78 @@ def test_grid_fits_an_a1_viewport() -> None:
 
 def test_paper_size_by_media_name() -> None:
     assert paper_size("ISO_A1_(841.00_x_594.00_MM)") == (841.0, 594.0)
-    assert paper_size("ANSI_D_(34.00_x_22.00_IN)") == (863.6, 558.8)
+    assert paper_size("ISO_A1_(594.00_x_841.00_MM)") == (841.0, 594.0)
+    assert paper_size("ANSI_D_(34.00_x_22.00_In)") == (863.6, 558.8)
     assert paper_size("desconocido") == (841.0, 594.0)
+
+
+def test_landscape_media_is_preferred() -> None:
+    class FakeLayout:
+        @staticmethod
+        def GetCanonicalMediaNames() -> tuple[str, ...]:
+            return (
+                "ISO_A1_(594.00_x_841.00_MM)",
+                "ISO_A1_(841.00_x_594.00_MM)",
+                "ANSI_A_(11.00_x_8.50_Inches)",
+            )
+
+    assert DetailSheetTools._pick_media(FakeLayout()) == "ISO_A1_(841.00_x_594.00_MM)"
+
+    class PortraitOnly:
+        @staticmethod
+        def GetCanonicalMediaNames() -> tuple[str, ...]:
+            return ("ISO_A1_(594.00_x_841.00_MM)", "ISO_A2_(420.00_x_594.00_MM)")
+
+    assert DetailSheetTools._pick_media(PortraitOnly()) == "ISO_A1_(594.00_x_841.00_MM)"
+
+    class NoMedia:
+        @staticmethod
+        def GetCanonicalMediaNames() -> tuple[str, ...]:
+            raise RuntimeError("sin trazador")
+
+    assert DetailSheetTools._pick_media(NoMedia()) == "ISO_A1_(841.00_x_594.00_MM)"
+
+
+def test_publish_pdf_overwrites_target(tmp_path: object) -> None:
+    from pathlib import Path
+
+    folder = Path(str(tmp_path))
+    staging = folder / "plano.plot.pdf"
+    target = folder / "plano.pdf"
+    staging.write_bytes(b"%PDF-1.7 staging")
+    target.write_bytes(b"%PDF-1.7 viejo")
+
+    final = DetailSheetTools._publish_pdf(staging, target)
+
+    assert final == target
+    assert target.read_bytes() == b"%PDF-1.7 staging"
+    assert not staging.exists()
+
+
+def test_publish_pdf_uses_staging_when_target_is_locked(
+    tmp_path: object, monkeypatch: object
+) -> None:
+    from pathlib import Path
+
+    folder = Path(str(tmp_path))
+    staging = folder / "plano.plot.pdf"
+    target = folder / "plano.pdf"
+    staging.write_bytes(b"%PDF-1.7 staging")
+
+    def locked(src: object, dst: object) -> None:
+        raise PermissionError(32, "archivo en uso")
+
+    monkeypatch.setattr("autocad_mcp.features.detail_sheet.os.replace", locked)  # type: ignore[attr-defined]
+    monkeypatch.setattr(  # type: ignore[attr-defined]
+        "autocad_mcp.features.detail_sheet.time.sleep", lambda _seconds: None
+    )
+
+    final = DetailSheetTools._publish_pdf(staging, target, attempts=2)
+
+    # El destino se escribe igual por copia; si no se pudiera, queda el de paso.
+    assert final in (target, staging)
+    assert final.exists()
+    assert final.read_bytes() == b"%PDF-1.7 staging"
 
 
 def test_hatch_lines_stay_inside_polygon() -> None:

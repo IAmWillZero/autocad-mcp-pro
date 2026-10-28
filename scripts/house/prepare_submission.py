@@ -261,8 +261,16 @@ def _layout_device(layout, media: str, pc3: str) -> None:
         pass
 
 
-def _viewport(doc, paper, cx: float, cy: float, width: float, height: float, scale: float,
-              model_center: tuple[float, float]):
+def _viewport(
+    doc,
+    paper,
+    cx: float,
+    cy: float,
+    width: float,
+    height: float,
+    scale: float,
+    model_center: tuple[float, float],
+):
     vp = paper.AddPViewport(variant_point(cx, cy), width, height)
     try:
         vp.Layer = "A-VPORT"
@@ -285,9 +293,10 @@ def _viewport(doc, paper, cx: float, cy: float, width: float, height: float, sca
                 time.sleep(0.8)
                 try:
                     current = doc.GetVariable("VIEWCTR")
-                    if abs(float(current[0]) - model_center[0]) < 0.01 and abs(
-                        float(current[1]) - model_center[1]
-                    ) < 0.01:
+                    if (
+                        abs(float(current[0]) - model_center[0]) < 0.01
+                        and abs(float(current[1]) - model_center[1]) < 0.01
+                    ):
                         break
                 except Exception:  # noqa: BLE001
                     pass
@@ -307,9 +316,18 @@ def _viewport(doc, paper, cx: float, cy: float, width: float, height: float, sca
     return vp
 
 
-def _new_layout(doc, name: str, media: str, width: float, height: float, pc3: str,
-                viewports: list[tuple[float, float, float, float, float, tuple[float, float]]],
-                sheet: str, scales: str, labels: list[tuple[str, float, float]]) -> None:
+def _new_layout(
+    doc,
+    name: str,
+    media: str,
+    width: float,
+    height: float,
+    pc3: str,
+    viewports: list[tuple[float, float, float, float, float, tuple[float, float]]],
+    sheet: str,
+    scales: str,
+    labels: list[tuple[str, float, float]],
+) -> None:
     layout = doc.Layouts.Add(name)
     _layout_device(layout, media, pc3)
     _activate_layout(doc, name, paper=True)
@@ -352,8 +370,7 @@ def _normalize_layout_views(
     viewports = [
         block.Item(i)
         for i in range(int(block.Count))
-        if block.Item(i).ObjectName == "AcDbViewport"
-        and str(block.Item(i).Layer) == "A-VPORT"
+        if block.Item(i).ObjectName == "AcDbViewport" and str(block.Item(i).Layer) == "A-VPORT"
     ]
     for vp, (view_height, center) in zip(viewports, specs, strict=False):
         for _ in range(5):
@@ -366,9 +383,10 @@ def _normalize_layout_views(
                 doc.SendCommand(f"_.ZOOM\n_C\n{center[0]},{center[1]}\n{view_height}\n")
                 time.sleep(1.0)
                 current = doc.GetVariable("VIEWCTR")
-                ok = abs(float(current[0]) - center[0]) < 0.01 and abs(
-                    float(current[1]) - center[1]
-                ) < 0.01
+                ok = (
+                    abs(float(current[0]) - center[0]) < 0.01
+                    and abs(float(current[1]) - center[1]) < 0.01
+                )
                 vp.DisplayLocked = True
                 doc.MSpace = False
                 if ok:
@@ -395,7 +413,9 @@ def create_layouts(doc) -> None:
                 time.sleep(0.35)
 
     appdata = Path(os.environ.get("APPDATA", ""))
-    pc3_path = appdata / "Autodesk" / "AutoCAD 2026" / "R25.1" / "enu" / "plotters" / "DWG To PDF.pc3"
+    pc3_path = (
+        appdata / "Autodesk" / "AutoCAD 2026" / "R25.1" / "enu" / "plotters" / "DWG To PDF.pc3"
+    )
     pc3 = str(pc3_path) if pc3_path.exists() else "DWG To PDF.pc3"
 
     # A4 vertical por planta: 1:100 = 10 mm de papel por unidad en metros.
@@ -527,8 +547,14 @@ def _word_font(selection, size: float = 10, bold: bool = False, color: int | Non
         selection.Font.Color = color
 
 
-def _word_text(selection, text: str, size: float = 10, bold: bool = False,
-               align: int = 0, color: int | None = None) -> None:
+def _word_text(
+    selection,
+    text: str,
+    size: float = 10,
+    bold: bool = False,
+    align: int = 0,
+    color: int | None = None,
+) -> None:
     selection.ParagraphFormat.Alignment = align
     selection.ParagraphFormat.SpaceAfter = 5
     _word_font(selection, size, bold, color)
@@ -585,7 +611,9 @@ def create_docx() -> None:
         page_setup.LeftMargin = 55
         page_setup.RightMargin = 55
         header = section.Headers(1).Range
-        header.Text = "UNIVERSIDAD CESAR VALLEJO  |  ESCUELA DE INGENIERIA CIVIL  |  EXPRESION GRAFICA"
+        header.Text = (
+            "UNIVERSIDAD CESAR VALLEJO  |  ESCUELA DE INGENIERIA CIVIL  |  EXPRESION GRAFICA"
+        )
         header.Font.Name = "Arial"
         header.Font.Size = 8
         header.Font.Color = _rgb(90, 90, 90)
@@ -621,8 +649,14 @@ def create_docx() -> None:
                 ["Fecha de entrega", "27 de octubre de 2026"],
             ],
         )
-        _word_text(sel, "Documento elaborado con base en el encargo INV N° 02 y el DWG de trabajo.", 9, False, 1,
-                   _rgb(100, 100, 100))
+        _word_text(
+            sel,
+            "Documento elaborado con base en el encargo INV N° 02 y el DWG de trabajo.",
+            9,
+            False,
+            1,
+            _rgb(100, 100, 100),
+        )
         _word_page_break(sel)
 
         _word_heading(sel, "1. Objeto y alcance", 1)
@@ -632,7 +666,11 @@ def create_docx() -> None:
             10,
         )
         _word_heading(sel, "2. Datos del terreno y usuarios", 1)
-        _word_text(sel, "El terreno es rectangular, con frente y fondo de 8.00 m y laterales de 23.00 m. Se considera una vivienda familiar para 4 a 5 integrantes como hipótesis académica de diseño; esta condición puede ajustarse por el grupo sin alterar la lógica general de zonificación.", 10)
+        _word_text(
+            sel,
+            "El terreno es rectangular, con frente y fondo de 8.00 m y laterales de 23.00 m. Se considera una vivienda familiar para 4 a 5 integrantes como hipótesis académica de diseño; esta condición puede ajustarse por el grupo sin alterar la lógica general de zonificación.",
+            10,
+        )
         _word_table(
             doc,
             sel,
@@ -656,7 +694,11 @@ def create_docx() -> None:
         _word_page_break(sel)
 
         _word_heading(sel, "4. Programa arquitectónico y áreas", 1)
-        _word_text(sel, f"La huella final es de {data['huella']:.2f} m² por planta. La superficie techada total es de {data['total']:.2f} m² y el área libre es de {data['area_libre']:.2f} m² ({data['libre_pct']:.2f}% del terreno).", 10)
+        _word_text(
+            sel,
+            f"La huella final es de {data['huella']:.2f} m² por planta. La superficie techada total es de {data['total']:.2f} m² y el área libre es de {data['area_libre']:.2f} m² ({data['libre_pct']:.2f}% del terreno).",
+            10,
+        )
         _word_table(
             doc,
             sel,
@@ -670,13 +712,27 @@ def create_docx() -> None:
             ],
         )
         _word_heading(sel, "Planta baja", 2)
-        _word_table(doc, sel, ["Ambiente", "Área (m²)"], [[label, f"{area:.2f}"] for label, area in data["pb"]])
+        _word_table(
+            doc,
+            sel,
+            ["Ambiente", "Área (m²)"],
+            [[label, f"{area:.2f}"] for label, area in data["pb"]],
+        )
         _word_heading(sel, "Planta alta", 2)
-        _word_table(doc, sel, ["Ambiente", "Área (m²)"], [[label, f"{area:.2f}"] for label, area in data["pa"]])
+        _word_table(
+            doc,
+            sel,
+            ["Ambiente", "Área (m²)"],
+            [[label, f"{area:.2f}"] for label, area in data["pa"]],
+        )
         _word_page_break(sel)
 
         _word_heading(sel, "5. Zonificación y funcionamiento", 1)
-        _word_text(sel, "La planta baja integra el acceso principal, garaje, hall, oficina, sala de estar, comedor, cocina, lavandería, SS.HH. y escalera. La planta alta integra tres dormitorios, dos SS.HH., vestidor, sala de estar, hall, escalera y balcón. La zonificación se representa en el DWG con leyenda diferenciada para zona social, servicios, privada, circulación y área libre.", 10)
+        _word_text(
+            sel,
+            "La planta baja integra el acceso principal, garaje, hall, oficina, sala de estar, comedor, cocina, lavandería, SS.HH. y escalera. La planta alta integra tres dormitorios, dos SS.HH., vestidor, sala de estar, hall, escalera y balcón. La zonificación se representa en el DWG con leyenda diferenciada para zona social, servicios, privada, circulación y área libre.",
+            10,
+        )
         _word_heading(sel, "6. Criterios de representación gráfica", 1)
         for item in (
             "Dibujo en modelo a escala 1:1, con unidades reales en metros y cotas con dos decimales.",
@@ -695,13 +751,22 @@ def create_docx() -> None:
                 ["A-01", "A4 vertical", "Planta baja", "1:100"],
                 ["A-02", "A4 vertical", "Planta alta", "1:100"],
                 ["A-03", "A3 horizontal color", "PB + PA y zonificación", "1:100 / 1:250"],
-                ["A-04", "A3 horizontal", "Ventana completa: plantas, zonificación y cuadros", "1:200"],
+                [
+                    "A-04",
+                    "A3 horizontal",
+                    "Ventana completa: plantas, zonificación y cuadros",
+                    "1:200",
+                ],
             ],
         )
         _word_page_break(sel)
 
         _word_heading(sel, "7. Control de calidad del DWG", 1)
-        _word_text(sel, "El archivo se mantiene como un único DWG de trabajo, con layouts de presentación y sin crear un archivo alterno de geometría. La configuración fue revisada después de regenerar el modelo y antes de preparar las láminas.", 10)
+        _word_text(
+            sel,
+            "El archivo se mantiene como un único DWG de trabajo, con layouts de presentación y sin crear un archivo alterno de geometría. La configuración fue revisada después de regenerar el modelo y antes de preparar las láminas.",
+            10,
+        )
         _word_table(
             doc,
             sel,
@@ -726,8 +791,19 @@ def create_docx() -> None:
         ):
             _word_text(sel, "• " + item, 10)
         _word_heading(sel, "9. Conclusión", 1)
-        _word_text(sel, "El anteproyecto organiza una vivienda de dos pisos con programa completo, mobiliario a escala, zonificación legible, área libre del 30.00% y presentación gráfica normalizada. La configuración métrica y los layouts preparados permiten obtener una salida impresa consistente en A4 vertical y A3 a color, evitando conversiones ambiguas de escala.", 10)
-        _word_text(sel, "Documento preparado para la entrega académica del grupo A1.", 10, True, 1, _rgb(180, 25, 35))
+        _word_text(
+            sel,
+            "El anteproyecto organiza una vivienda de dos pisos con programa completo, mobiliario a escala, zonificación legible, área libre del 30.00% y presentación gráfica normalizada. La configuración métrica y los layouts preparados permiten obtener una salida impresa consistente en A4 vertical y A3 a color, evitando conversiones ambiguas de escala.",
+            10,
+        )
+        _word_text(
+            sel,
+            "Documento preparado para la entrega académica del grupo A1.",
+            10,
+            True,
+            1,
+            _rgb(180, 25, 35),
+        )
 
         DOCX_OUT.parent.mkdir(parents=True, exist_ok=True)
         doc.SaveAs2(str(DOCX_OUT), FileFormat=12)

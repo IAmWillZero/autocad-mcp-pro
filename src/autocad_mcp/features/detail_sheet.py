@@ -13,9 +13,13 @@ no en metros: la lamina se imprime a 1:1 con el viewport.
 from __future__ import annotations
 
 import math
+import os
+import re
+import shutil
 import time
 from dataclasses import dataclass, replace
 from datetime import date
+from pathlib import Path
 from typing import Any
 
 from autocad_mcp.colors import color_index
@@ -32,6 +36,9 @@ CELL_HEIGHT = 170.0
 DEFAULT_COLUMNS = 4
 DEFAULT_ORIGIN: Point = (20000.0, 0.0)
 
+# Trazador PDF de AutoCAD: define los nombres canonicos de papel.
+PLOT_DEVICE = "DWG To PDF.pc3"
+
 # Tamano canonico de papel por prefijo de nombre de medio de AutoCAD.
 _SHEET_SIZES: dict[str, tuple[float, float]] = {
     "ISO_A0": (1189.0, 841.0),
@@ -41,6 +48,9 @@ _SHEET_SIZES: dict[str, tuple[float, float]] = {
     "ANSI_D": (863.6, 558.8),
     "ANSI_C": (558.8, 431.8),
 }
+
+# "ISO_A1_(841.00_x_594.00_MM)" / "ANSI_D_(34.00_x_22.00_In)"
+_MEDIA_PATTERN = re.compile(r"_\(\s*([\d.]+)\s*_x_?\s*([\d.]+)\s*_(mm|in)\b", re.IGNORECASE)
 
 
 # ---------------------------------------------------------------------------
@@ -719,7 +729,11 @@ def sheet_size(count: int, columns: int = DEFAULT_COLUMNS) -> tuple[float, float
 
 
 def paper_size(media: str) -> tuple[float, float]:
-    """Tamano de papel (mm) segun el nombre canonico de AutoCAD."""
+    """Tamano de papel (mm, apaisado) segun el nombre canonico de AutoCAD."""
+    parsed = _media_dimensions(media)
+    if parsed is not None:
+        long_side, short_side = max(parsed), min(parsed)
+        return (round(long_side, 1), round(short_side, 1))
     upper = media.upper()
     for prefix, size in _SHEET_SIZES.items():
         if upper.startswith(prefix):
@@ -727,9 +741,121 @@ def paper_size(media: str) -> tuple[float, float]:
     return (841.0, 594.0)
 
 
+def _media_dimensions(media: str) -> tuple[float, float] | None:
+    """Extrae (ancho, alto) en mm del nombre canonico de AutoCAD."""
+    match = _MEDIA_PATTERN.search(str(media))
+    if match is None:
+        return None
+    try:
+        width, height = float(match.group(1)), float(match.group(2))
+    except ValueError:
+        return None
+    if match.group(3).lower() == "in":
+        width, height = width * 25.4, height * 25.4
+    return (width, height)
+
+
+def _is_landscape_media(media: str) -> bool:
+    dims = _media_dimensions(media)
+    return bool(dims and dims[0] > dims[1])
+
+
 # ---------------------------------------------------------------------------
 # Herramienta COM
 # ---------------------------------------------------------------------------
+
+
+def _is_plot_busy(exc: BaseException) -> bool:
+    """True si AutoCAD rechazo la llamada por estar ocupado (plot/save en curso).
+
+    Ademas de ``RPC_E_CALL_REJECTED`` y ``RPC_E_DISCONNECTED``, AutoCAD devuelve
+    errores de propiedad (``Property 'AddCircle.Layer' can not be set``) cuando el
+    proxy COM queda invalidado mientras traza o guarda: tambien son transitorios.
+    """
+    text = f"{exc} {exc!r}".lower()
+    codes = ("-2147418111", "-2147417848", "-2147418113")
+    phrases = (
+        "rechazada",
+        "rejected",
+        "desconectado",
+        "can not be set",
+        "cannot be set",
+        "unable to set",
+        "call was rejected",
+    )
+    return any(code in text for code in codes) or any(phrase in text for phrase in phrases)
+
+
+def _make_entity(factory: Any, configure: Any, attempts: int = 5, delay: float = 0.6) -> Any:
+    """Crea una entidad y la configura, recreandola si AutoCAD rechaza el proxy.
+
+    AutoCAD puede devolver un objeto COM valido y rechazar la escritura de sus
+    propiedades; en ese caso hay que borrar el objeto y volver a crearlo.
+    """
+    last: BaseException | None = None
+    for _ in range(attempts):
+        obj = factory()
+        try:
+            configure(obj)
+            return obj
+        except Exception as exc:  # noqa: BLE001 - proxy COM invalidado por AutoCAD
+            last = exc
+            try:
+                obj.Delete()
+            except Exception:  # noqa: BLE001
+                pass
+            if not _is_plot_busy(exc):
+                raise
+            time.sleep(delay)
+    assert last is not None
+    raise last
+
+
+def _com_retry(action: Any, attempts: int = 40, delay: float = 0.75) -> Any:
+    """Reintenta una llamada COM mientras AutoCAD este ocupado."""
+    last: BaseException | None = None
+    for _ in range(attempts):
+        try:
+            return action()
+        except Exception as exc:  # noqa: BLE001 - errores COM variados
+            last = exc
+            if not _is_plot_busy(exc):
+                raise
+            time.sleep(delay)
+    assert last is not None
+    raise last
+
+
+def _wait_file_stable(path: Path, timeout: float = 60.0, settle: float = 1.2) -> bool:
+    """Espera a que el PDF exista y su tamano deje de cambiar."""
+    deadline = time.monotonic() + timeout
+    previous = -1
+    while time.monotonic() < deadline:
+        if path.exists():
+            size = path.stat().st_size
+            if size > 0 and size == previous:
+                return True
+            previous = size
+        time.sleep(settle)
+    return path.exists() and path.stat().st_size > 0
+
+
+def _wait_idle(app: Any, timeout: float = 90.0, poll: float = 0.5) -> bool:
+    """Espera a que AutoCAD este inactivo (``AcadState.IsQuiescent``).
+
+    Componer la lamina mientras AutoCAD procesa un comando o un trazado hace que
+    rechace las llamadas COM (``RPC_E_CALL_REJECTED``) y a veces devuelve objetos
+    a medio crear. Esperar al estado inactivo evita casi todos esos fallos.
+    """
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            if bool(app.GetAcadState().IsQuiescent):
+                return True
+        except Exception:  # noqa: BLE001 - version sin GetAcadState
+            return False
+        time.sleep(poll)
+    return False
 
 
 class DetailSheetTools(FeatureBase):
@@ -739,6 +865,7 @@ class DetailSheetTools(FeatureBase):
         super().__init__(conn, cache)
         self._text_style = "Standard"
         self._dim_style = "Standard"
+        self._sheet_viewport: tuple[str, float, float] = ("", 0.0, 0.0)
 
     def create_detail_sheet(
         self,
@@ -766,70 +893,279 @@ class DetailSheetTools(FeatureBase):
                 "error": "columns debe ser 4: la lamina A1 esta compuesta para 4 x 3",
             }
 
+        last_error: BaseException | None = None
+        attempts = 6
+        try:
+            _wait_idle(self.conn.app)
+        except Exception:  # noqa: BLE001
+            pass
+        for attempt in range(attempts):
+            try:
+                # Reengancharse en cada intento: si AutoCAD invalido el proxy del
+                # documento, reintentar con el mismo objeto falla siempre.
+                if not self.conn.ensure():
+                    return {"error": "Not connected to AutoCAD"}
+                doc = self.conn.doc
+                _com_retry(doc.Activate, attempts=5)
+                return self._compose_sheet(doc, base, columns, layout_name, include_dimensions)
+            except Exception as exc:  # noqa: BLE001 - COM devuelve errores variados
+                last_error = exc
+                if not _is_plot_busy(exc) or attempt == attempts - 1:
+                    break
+                # Backoff progresivo: AutoCAD suele tardar varios segundos en soltar COM.
+                time.sleep(1.5 * (attempt + 1))
+        return {"success": False, "error": f"No se pudo crear la lamina: {last_error}"}
+
+    def _compose_sheet(
+        self,
+        doc: Any,
+        base: Point,
+        columns: int,
+        layout_name: str,
+        include_dimensions: bool,
+    ) -> dict[str, Any]:
+        """Dibuja bloques, retícula y lámina. Se reintenta entero si COM está ocupado."""
+        created_layers = self._ensure_layers(doc)
+        self._text_style = self._ensure_text_style(doc)
+        self._dim_style = self._ensure_dim_style(doc)
+
+        removed = self._cleanup(doc, layout_name)
+        model_space = self.conn.model_space()
+        blocks = self._build_blocks(doc, model_space)
+
+        cells = sheet_cells(len(DETAIL_LIBRARY), base, columns)
+        sheet_entities = 0
+        references: list[dict[str, Any]] = []
+        for spec, cell in zip(DETAIL_LIBRARY, cells, strict=True):
+            ref = model_space.InsertBlock(
+                variant_point(cell.cx, cell.cy - 4.0, 0.0),
+                spec.name,
+                1.0,
+                1.0,
+                1.0,
+                0.0,
+            )
+            ref.Layer = self._layer("view")
+            sheet_entities += 1
+            references.append(
+                {
+                    "code": spec.code,
+                    "block": spec.name,
+                    "title": spec.title,
+                    "scale": spec.scale,
+                    "handle": self._handle(ref),
+                }
+            )
+            sheet_entities += self._draw_cell(model_space, cell, spec, include_dimensions)
+
+        width, height = sheet_size(len(DETAIL_LIBRARY), columns)
+        layout_info = self._build_layout(doc, layout_name, base, width, height)
+        self.conn.regen()
+        self._invalidate()
+
+        return {
+            "success": True,
+            "layout": layout_info["layout"],
+            "paper_size": layout_info["paper_size"],
+            "media": layout_info["media"],
+            "device": layout_info["device"],
+            "viewports": layout_info["viewports"],
+            "removed_paper_entities": layout_info["removed_paper_entities"],
+            "origin": [base[0], base[1]],
+            "grid": {"columns": columns, "rows": math.ceil(len(DETAIL_LIBRARY) / columns)},
+            "cell": [CELL_WIDTH, CELL_HEIGHT],
+            "blocks": blocks,
+            "block_count": len(blocks),
+            "details": references,
+            "removed_previous": removed,
+            "entities": sheet_entities,
+            "layers_created": created_layers,
+            "layers": [str(spec["name"]) for spec in DETAIL_LAYERS.values()],
+            "viewport": layout_info["viewport"],
+            "message": (
+                f"Lamina '{layout_name}' creada con {len(blocks)} bloques y "
+                f"{len(references)} detalles"
+            ),
+        }
+
+    def plot_to_pdf(self, path: str, layout_name: str = "DETALLES-ACERO") -> dict[str, Any]:
+        """Traza el layout a PDF con ``PlotToFile`` (sin el comando -PLOT).
+
+        ``-PLOT`` por ``SendCommand`` es sincrono: si una respuesta no coincide,
+        AutoCAD queda esperando entrada y bloquea COM. ``PlotToFile`` tambien
+        corre en segundo plano, asi que hay que esperar a que el archivo deje de
+        crecer y reintentar mientras AutoCAD rechaza llamadas por estar ocupado.
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        try:
+            _wait_idle(self.conn.app)
+        except Exception:  # noqa: BLE001
+            pass
+
         doc = self.conn.doc
         try:
-            created_layers = self._ensure_layers(doc)
-            self._text_style = self._ensure_text_style(doc)
-            self._dim_style = self._ensure_dim_style(doc)
+            _com_retry(lambda: doc.Layouts.Item(str(layout_name)))
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"Layout '{layout_name}' no existe: {exc}"}
 
-            removed = self._cleanup(doc, layout_name)
-            model_space = self.conn.model_space()
-            blocks = self._build_blocks(doc, model_space)
+        # El layout tiene que ser el activo: PlotToFile ignora el layout pedido y
+        # traza siempre el actual (si no, sale una hoja A4 vacia de Layout1).
+        # Ojo: ``ActiveSpace=1`` debe ir ANTES de ``CTAB``; al reves, AutoCAD
+        # devuelve el layout "Model" como activo y el trazado sale en blanco.
+        def activate() -> str:
+            doc.Activate()
+            doc.ActiveSpace = 1
+            doc.SetVariable("CTAB", str(layout_name))
+            current = str(doc.GetVariable("CTAB"))
+            if current != str(layout_name):
+                doc.ActiveLayout = doc.Layouts.Item(str(layout_name))
+                current = str(doc.GetVariable("CTAB"))
+            if current != str(layout_name):
+                raise RuntimeError(f"no se pudo activar el layout '{layout_name}'")
+            return current
 
-            cells = sheet_cells(len(DETAIL_LIBRARY), base, columns)
-            sheet_entities = 0
-            references: list[dict[str, Any]] = []
-            for spec, cell in zip(DETAIL_LIBRARY, cells, strict=True):
-                ref = model_space.InsertBlock(
-                    variant_point(cell.cx, cell.cy - 4.0, 0.0),
-                    spec.name,
-                    1.0,
-                    1.0,
-                    1.0,
-                    0.0,
-                )
-                ref.Layer = self._layer("view")
-                sheet_entities += 1
-                references.append(
-                    {
-                        "code": spec.code,
-                        "block": spec.name,
-                        "title": spec.title,
-                        "scale": spec.scale,
-                        "handle": self._handle(ref),
-                    }
-                )
-                sheet_entities += self._draw_cell(model_space, cell, spec, include_dimensions)
+        try:
+            active_name = _com_retry(activate)
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"no se pudo activar el layout: {exc}"}
 
-            width, height = sheet_size(len(DETAIL_LIBRARY), columns)
-            layout_info = self._build_layout(doc, layout_name, base, width, height)
-            self.conn.regen()
-            self._invalidate()
+        try:
+            _com_retry(lambda: self._prune_other_viewports(doc), attempts=5)
+        except Exception:  # noqa: BLE001
+            pass
 
-            return {
-                "success": True,
-                "layout": layout_info["layout"],
-                "paper_size": layout_info["paper_size"],
-                "origin": [base[0], base[1]],
-                "grid": {"columns": columns, "rows": math.ceil(len(DETAIL_LIBRARY) / columns)},
-                "cell": [CELL_WIDTH, CELL_HEIGHT],
-                "blocks": blocks,
-                "block_count": len(blocks),
-                "details": references,
-                "removed_previous": removed,
-                "entities": sheet_entities,
-                "layers_created": created_layers,
-                "layers": [str(spec["name"]) for spec in DETAIL_LAYERS.values()],
-                "viewport": layout_info["viewport"],
-                "message": (
-                    f"Lamina '{layout_name}' creada con {len(blocks)} bloques y "
-                    f"{len(references)} detalles"
-                ),
-            }
-        except Exception as exc:  # noqa: BLE001 - COM devuelve errores variados
-            return {"success": False, "error": f"No se pudo crear la lamina: {exc}"}
+        def configure() -> tuple[str, str]:
+            layout = doc.ActiveLayout
+            if not str(layout.ConfigName).lower().startswith("dwg to pdf"):
+                layout.ConfigName = PLOT_DEVICE
+            if not _is_landscape_media(str(layout.CanonicalMediaName)):
+                layout.CanonicalMediaName = self._pick_media(layout)
+            return (str(layout.CanonicalMediaName), str(layout.ConfigName))
+
+        try:
+            media, device = _com_retry(configure)
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"no se pudo configurar el papel: {exc}"}
+
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Trazar a un archivo de paso evita que un PDF abierto en el visor impida
+        # escribir el definitivo (antes quedaban PDF huerfanos con hora).
+        staging = target.with_name(f"{target.stem}.plot{target.suffix}")
+        for stale in (staging,):
+            if stale.exists():
+                try:
+                    stale.unlink()
+                except OSError:
+                    pass
+        try:
+            _com_retry(lambda: setattr(doc.Plot, "QuietErrorMode", True), attempts=5)
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            _com_retry(lambda: doc.Plot.PlotToFile(str(staging)), attempts=20)
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"PlotToFile fallo: {exc}"}
+
+        if not _wait_file_stable(staging):
+            return {"success": False, "error": f"el PDF no se genero en {staging}"}
+
+        final = self._publish_pdf(staging, target)
+        return {
+            "success": True,
+            "pdf": str(final),
+            "size": final.stat().st_size,
+            "media": media,
+            "device": device,
+            "layout": active_name,
+        }
+
+    @staticmethod
+    def _publish_pdf(staging: Path, target: Path, attempts: int = 10) -> Path:
+        """Mueve el PDF trazado a su nombre final pese al bloqueo de AutoCAD.
+
+        AutoCAD mantiene un handle abierto sobre el archivo recien trazado, asi
+        que ``os.replace`` falla con ``WinError 32``; en ese caso se copia.
+        """
+        for _ in range(attempts):
+            try:
+                if target.exists():
+                    target.unlink()
+                os.replace(staging, target)
+                return target
+            except OSError:
+                time.sleep(1.0)
+        try:
+            shutil.copyfile(staging, target)
+        except OSError:
+            return staging
+        try:
+            staging.unlink()
+        except OSError:
+            pass
+        return target
+
+    def prune_extra_viewports(self, layout_name: str = "DETALLES-ACERO") -> dict[str, Any]:
+        """Deja un solo viewport en la lamina y devuelve cuantos quito.
+
+        AutoCAD recrea el viewport principal del layout cada vez que se activa,
+        asi que conviene llamarlo justo antes de guardar el DWG.
+        """
+        if not self.conn.ensure():
+            return {"error": "Not connected to AutoCAD"}
+
+        doc = self.conn.doc
+
+        def activate() -> None:
+            doc.Activate()
+            doc.ActiveSpace = 1
+            doc.SetVariable("CTAB", str(layout_name))
+
+        try:
+            _com_retry(activate, attempts=10)
+            removed = int(_com_retry(lambda: self._prune_other_viewports(doc), attempts=5))
+        except Exception as exc:  # noqa: BLE001
+            return {"success": False, "error": f"no se pudieron limpiar los viewports: {exc}"}
+        return {
+            "success": True,
+            "layout": str(layout_name),
+            "removed": removed,
+            "viewports": self._viewport_count(doc.PaperSpace),
+        }
 
     # -- capas y estilos -------------------------------------------------
+
+    def _prune_other_viewports(self, doc: Any) -> int:
+        """Deja solo el viewport de la lamina (por handle o por tamano)."""
+        handle, width, height = self._sheet_viewport
+        paper = doc.PaperSpace
+        removed = 0
+        for index in range(int(paper.Count) - 1, -1, -1):
+            try:
+                entity = paper.Item(index)
+                if str(entity.ObjectName) != "AcDbViewport":
+                    continue
+                own_handle = self._handle(entity)
+                matches_size = (
+                    abs(float(entity.Width) - width) < 1.0
+                    and abs(float(entity.Height) - height) < 1.0
+                )
+            except Exception:  # noqa: BLE001
+                continue
+            if (handle and own_handle == handle) or (not handle and matches_size):
+                continue
+            try:
+                entity.ViewportOn = False
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                entity.Delete()
+                removed += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return removed
 
     def _ensure_layers(self, doc: Any) -> list[str]:
         layers = doc.Layers
@@ -973,38 +1309,45 @@ class DetailSheetTools(FeatureBase):
         return str(spec["name"])
 
     def _add_line(self, space: Any, item: LineItem, dx: float, dy: float) -> Any:
-        obj = space.AddLine(
-            variant_point(item.p1[0] + dx, item.p1[1] + dy, 0.0),
-            variant_point(item.p2[0] + dx, item.p2[1] + dy, 0.0),
+        p1 = variant_point(item.p1[0] + dx, item.p1[1] + dy, 0.0)
+        p2 = variant_point(item.p2[0] + dx, item.p2[1] + dy, 0.0)
+        layer = self._layer(item.layer)
+        return _make_entity(
+            lambda: space.AddLine(p1, p2),
+            lambda obj: setattr(obj, "Layer", layer),
         )
-        obj.Layer = self._layer(item.layer)
-        return obj
 
     def _add_circle(self, space: Any, item: CircleItem, dx: float, dy: float) -> Any:
-        obj = space.AddCircle(
-            variant_point(item.center[0] + dx, item.center[1] + dy, 0.0),
-            float(item.radius),
+        center = variant_point(item.center[0] + dx, item.center[1] + dy, 0.0)
+        radius = float(item.radius)
+        layer = self._layer(item.layer)
+        return _make_entity(
+            lambda: space.AddCircle(center, radius),
+            lambda obj: setattr(obj, "Layer", layer),
         )
-        obj.Layer = self._layer(item.layer)
-        return obj
 
     def _add_arc(self, space: Any, item: ArcItem, dx: float, dy: float) -> Any:
-        obj = space.AddArc(
-            variant_point(item.center[0] + dx, item.center[1] + dy, 0.0),
-            float(item.radius),
-            math.radians(float(item.start_angle)),
-            math.radians(float(item.end_angle)),
+        center = variant_point(item.center[0] + dx, item.center[1] + dy, 0.0)
+        radius = float(item.radius)
+        start = math.radians(float(item.start_angle))
+        end = math.radians(float(item.end_angle))
+        layer = self._layer(item.layer)
+        return _make_entity(
+            lambda: space.AddArc(center, radius, start, end),
+            lambda obj: setattr(obj, "Layer", layer),
         )
-        obj.Layer = self._layer(item.layer)
-        return obj
 
     def _add_poly(self, space: Any, item: PolyItem, dx: float, dy: float) -> Any:
         flat = [value for x, y in item.points for value in (float(x) + dx, float(y) + dy)]
-        obj = space.AddLightWeightPolyline(variant_array(flat))
-        if item.closed:
-            obj.Closed = True
-        obj.Layer = self._layer(item.layer)
-        return obj
+        layer = self._layer(item.layer)
+        points = variant_array(flat)
+
+        def configure(obj: Any) -> None:
+            if item.closed:
+                obj.Closed = True
+            obj.Layer = layer
+
+        return _make_entity(lambda: space.AddLightWeightPolyline(points), configure)
 
     def _add_text(
         self,
@@ -1015,29 +1358,35 @@ class DetailSheetTools(FeatureBase):
         layer: str,
         align: str = "left",
     ) -> Any:
-        obj = space.AddText(
-            _safe_text(text),
-            variant_point(point[0], point[1], 0.0),
-            float(height),
-        )
-        obj.Layer = self._layer(layer)
-        try:
-            obj.StyleName = self._text_style
-        except Exception:  # noqa: BLE001
-            pass
-        if align in ("center", "right"):
+        content = _safe_text(text)
+        location = variant_point(point[0], point[1], 0.0)
+        text_height = float(height)
+        layer_name = self._layer(layer)
+        style = self._text_style
+
+        def configure(obj: Any) -> None:
+            obj.Layer = layer_name
             try:
-                obj.Alignment = 10 if align == "center" else 2
-                obj.TextAlignmentPoint = variant_point(point[0], point[1], 0.0)
+                obj.StyleName = style
             except Exception:  # noqa: BLE001
-                shift = -0.28 * float(height) * len(text)
-                if align == "right":
-                    shift *= 2.0
+                pass
+            if align in ("center", "right"):
                 try:
-                    obj.InsertionPoint = variant_point(point[0] + shift, point[1], 0.0)
+                    obj.Alignment = 10 if align == "center" else 2
+                    obj.TextAlignmentPoint = location
                 except Exception:  # noqa: BLE001
-                    pass
-        return obj
+                    shift = -0.28 * text_height * len(text)
+                    if align == "right":
+                        shift *= 2.0
+                    try:
+                        obj.InsertionPoint = variant_point(point[0] + shift, point[1], 0.0)
+                    except Exception:  # noqa: BLE001
+                        pass
+
+        return _make_entity(
+            lambda: space.AddText(content, location, text_height),
+            configure,
+        )
 
     def _draw_items(self, space: Any, items: tuple[Item, ...], dx: float, dy: float) -> list[Any]:
         entities: list[Any] = []
@@ -1067,25 +1416,32 @@ class DetailSheetTools(FeatureBase):
         p1 = variant_point(item.p1[0] + dx, item.p1[1] + dy, 0.0)
         p2 = variant_point(item.p2[0] + dx, item.p2[1] + dy, 0.0)
         at = variant_point(item.at[0] + dx, item.at[1] + dy, 0.0)
-        if item.kind == "diametric":
-            dim = space.AddDimDiametric(p1, p2, 6.0)
-        elif item.kind == "aligned":
-            dim = space.AddDimAligned(p1, p2, at)
-        else:
-            dim = space.AddDimRotated(p1, p2, at, math.radians(float(item.rotation)))
-        try:
-            dim.Layer = self._layer(item.layer)
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            dim.StyleName = self._dim_style
-        except Exception:  # noqa: BLE001
-            pass
-        if item.text:
+        rotation = math.radians(float(item.rotation))
+        layer = self._layer(item.layer)
+        style = self._dim_style
+        override = item.text
+
+        def factory() -> Any:
+            if item.kind == "diametric":
+                return space.AddDimDiametric(p1, p2, 6.0)
+            if item.kind == "aligned":
+                return space.AddDimAligned(p1, p2, at)
+            return space.AddDimRotated(p1, p2, at, rotation)
+
+        def configure(dim: Any) -> None:
+            # La capa es obligatoria: si AutoCAD la rechaza, hay que recrear la cota.
+            dim.Layer = layer
             try:
-                dim.TextOverride = item.text
+                dim.StyleName = style
             except Exception:  # noqa: BLE001
                 pass
+            if override:
+                try:
+                    dim.TextOverride = override
+                except Exception:  # noqa: BLE001
+                    pass
+
+        dim = _make_entity(factory, configure)
         try:
             dim.Update()
         except Exception:  # noqa: BLE001
@@ -1203,33 +1559,51 @@ class DetailSheetTools(FeatureBase):
         except Exception:  # noqa: BLE001 - ya existe
             layout = doc.Layouts.Item(str(layout_name))
 
+        # El dispositivo se fija ANTES del tamano de papel: los nombres canonicos
+        # (ISO_A1...) dependen del trazador configurado en el layout.
+        try:
+            layout.ConfigName = PLOT_DEVICE
+        except Exception:  # noqa: BLE001
+            pass
         media = self._pick_media(layout)
         try:
             layout.CanonicalMediaName = media
         except Exception:  # noqa: BLE001
             pass
-        try:
-            layout.PlotPaperUnits = 1  # acMillimeters
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            layout.PlotRotation = 0
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            layout.StyleSheet = "monochrome.ctb"
-        except Exception:  # noqa: BLE001
-            pass
+        for name, value in (
+            ("PaperUnits", 1),  # acMillimeters
+            ("PlotRotation", 0),  # 0 grados (el medio ya es apaisado)
+            ("PlotType", 5),  # acLayout
+            ("StandardScale", 16),  # 1:1
+            ("UseStandardScale", True),
+            ("CenterPlot", True),
+            ("PlotWithPlotStyles", True),
+            ("PlotViewportBorders", False),
+            ("ScaleLineweights", False),
+            ("StyleSheet", "monochrome.ctb"),
+        ):
+            try:
+                setattr(layout, name, value)
+            except Exception:  # noqa: BLE001 - propiedad no soportada por la version
+                pass
 
         width, height = paper_size(media)
         try:
-            doc.ActiveLayout = layout
-            doc.ActiveSpace = 1
+            _com_retry(lambda: setattr(doc, "ActiveSpace", 1), attempts=10)
+            _com_retry(lambda: doc.SetVariable("CTAB", str(layout_name)), attempts=10)
+            _com_retry(
+                lambda: setattr(doc, "ActiveLayout", doc.Layouts.Item(str(layout_name))),
+                attempts=5,
+            )
         except Exception:  # noqa: BLE001
             pass
         time.sleep(0.4)
 
         paper = as_dynamic(doc.PaperSpace)
+        # Se borra todo (incluido el viewport que trae el layout): al viewport
+        # heredado no se le puede cambiar el tamano por COM. El propio se crea
+        # abajo y se registra para conservarlo al trazar.
+        removed = self._clear_paper_space(paper)
         self._draw_paper_sheet(paper, width, height)
 
         # Campo de dibujo: deja libre el rotulo inferior.
@@ -1243,10 +1617,7 @@ class DetailSheetTools(FeatureBase):
             viewport.ViewportOn = True
         except Exception:  # noqa: BLE001
             pass
-        try:
-            viewport.CustomScale = 1.0
-        except Exception:  # noqa: BLE001
-            pass
+        # 1:1 exacto: el alto de vista en unidades de modelo iguala el alto en papel.
         try:
             viewport.Target = variant_point(
                 origin[0] + lib_width / 2.0, origin[1] + lib_height / 2.0, 0.0
@@ -1254,9 +1625,25 @@ class DetailSheetTools(FeatureBase):
         except Exception:  # noqa: BLE001
             pass
         try:
+            viewport.ViewHeight = vp_y1 - vp_y0
+        except Exception:  # noqa: BLE001
+            pass
+        try:
+            viewport.CustomScale = 1.0
+        except Exception:  # noqa: BLE001
+            pass
+        try:
             viewport.DisplayLocked = True
         except Exception:  # noqa: BLE001
             pass
+
+        # Un layout nuevo trae su propio viewport: dejar solo el de la lamina.
+        pruned = self._prune_viewports(paper, viewport)
+        self._sheet_viewport = (
+            self._handle(viewport),
+            vp_x1 - vp_x0,
+            vp_y1 - vp_y0,
+        )
 
         try:
             doc.SetVariable("CTAB", str(layout_name))
@@ -1265,6 +1652,11 @@ class DetailSheetTools(FeatureBase):
         return {
             "layout": str(layout.Name),
             "paper_size": [width, height],
+            "media": media,
+            "device": str(layout.ConfigName),
+            "viewports": self._viewport_count(paper),
+            "removed_paper_entities": removed,
+            "removed_viewports": pruned,
             "viewport": {
                 "center": [vp_cx, vp_cy],
                 "size": [vp_x1 - vp_x0, vp_y1 - vp_y0],
@@ -1274,15 +1666,77 @@ class DetailSheetTools(FeatureBase):
         }
 
     @staticmethod
+    def _prune_viewports(paper: Any, keep: Any) -> int:
+        """Elimina los viewports que no son el de la lamina (o los apaga)."""
+        try:
+            keep_handle = str(keep.Handle)
+        except Exception:  # noqa: BLE001
+            keep_handle = ""
+        removed = 0
+        for index in range(int(paper.Count) - 1, -1, -1):
+            try:
+                entity = paper.Item(index)
+            except Exception:  # noqa: BLE001
+                continue
+            try:
+                if str(entity.ObjectName) != "AcDbViewport":
+                    continue
+                if keep_handle and str(entity.Handle) == keep_handle:
+                    continue
+            except Exception:  # noqa: BLE001
+                continue
+            try:
+                entity.ViewportOn = False
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                entity.Delete()
+                removed += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return removed
+
+    @staticmethod
+    def _clear_paper_space(paper: Any) -> int:
+        """Vacia el espacio papel (marco, rotulo y viewport heredados)."""
+        removed = 0
+        for index in range(int(paper.Count) - 1, -1, -1):
+            try:
+                entity = paper.Item(index)
+            except Exception:  # noqa: BLE001
+                continue
+            try:
+                entity.Delete()
+                removed += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return removed
+
+    @staticmethod
+    def _viewport_count(paper: Any) -> int:
+        count = 0
+        for index in range(int(paper.Count)):
+            try:
+                if str(paper.Item(index).ObjectName) == "AcDbViewport":
+                    count += 1
+            except Exception:  # noqa: BLE001
+                continue
+        return count
+
+    @staticmethod
     def _pick_media(layout: Any) -> str:
+        """Elige el A1 apaisado disponible en el trazador del layout."""
         try:
             names = [str(name) for name in layout.GetCanonicalMediaNames()]
         except Exception:  # noqa: BLE001
             names = []
         for prefix in ("ISO_A1", "ANSI_D", "ISO_A2", "ANSI_C"):
-            for name in names:
-                if name.upper().startswith(prefix):
-                    return name
+            candidates = [name for name in names if name.upper().startswith(prefix)]
+            landscape = [name for name in candidates if _is_landscape_media(name)]
+            if landscape:
+                return landscape[0]
+            if candidates:
+                return candidates[0]
         return names[0] if names else "ISO_A1_(841.00_x_594.00_MM)"
 
     def _draw_paper_sheet(self, paper: Any, width: float, height: float) -> None:

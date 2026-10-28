@@ -41,7 +41,7 @@ def draw_labels(s, rooms: list, X: list, Y: list, height: float = 0.22) -> None:
     # ancho real del texto ~0.95 de la altura por caracter (fuente del dibujo);
     # se usa 1.0 con holgura para no invadir muros.
     wf = 1.0
-    for (label, i0, i1, j0, j1) in rooms:
+    for label, i0, i1, j0, j1 in rooms:
         x0, x1 = X[i0], X[i1]
         y0, y1 = Y[j0], Y[j1]
         area = abs(x1 - x0) * abs(y1 - y0)
@@ -53,8 +53,8 @@ def draw_labels(s, rooms: list, X: list, Y: list, height: float = 0.22) -> None:
         inner_h = max((y1 - y0) - 2 * margin, 0.2)
         widest = max(len(t) for t in lines)
         n = len(lines)
-        h_w = inner_w / (wf * widest)            # cabe la linea mas larga
-        h_h = inner_h / (1.0 + 1.25 * (n - 1))   # cabe el bloque completo
+        h_w = inner_w / (wf * widest)  # cabe la linea mas larga
+        h_h = inner_h / (1.0 + 1.25 * (n - 1))  # cabe el bloque completo
         h = max(min(height, h_w, h_h), 0.09)
         line_gap = 1.25 * h
         total = h + (n - 1) * line_gap
@@ -71,10 +71,8 @@ def draw_labels(s, rooms: list, X: list, Y: list, height: float = 0.22) -> None:
 
 
 def draw_fixtures(s, fixtures: list, ox: float, oy: float) -> None:
-    for (block, pos, rot) in fixtures:
-        s.blocks.insert_block(
-            block, [pos[0] + ox, pos[1] + oy], rotation=rot, layer="A-MOBILIARIO"
-        )
+    for block, pos, rot in fixtures:
+        s.blocks.insert_block(block, [pos[0] + ox, pos[1] + oy], rotation=rot, layer="A-MOBILIARIO")
 
 
 def draw_bottom_dims(s, breaks: list, front: float, off: float, ox: float) -> None:
@@ -82,8 +80,12 @@ def draw_bottom_dims(s, breaks: list, front: float, off: float, ox: float) -> No
         b0, b1 = breaks[i], breaks[i + 1]
         mid = (b0 + b1) / 2.0
         s.dimensions.create_dimension(
-            "rotated", [[b0 + ox, front], [b1 + ox, front]], [mid + ox, front - off],
-            rotation=0.0, layer="A-COTAS", style="MCP-ARQ",
+            "rotated",
+            [[b0 + ox, front], [b1 + ox, front]],
+            [mid + ox, front - off],
+            rotation=0.0,
+            layer="A-COTAS",
+            style="MCP-ARQ",
         )
 
 
@@ -92,19 +94,36 @@ def draw_left_dims(s, breaks: list, left: float, off: float, oy: float) -> None:
         b0, b1 = breaks[i], breaks[i + 1]
         mid = (b0 + b1) / 2.0
         s.dimensions.create_dimension(
-            "rotated", [[left, b0 + oy], [left, b1 + oy]], [left - off, mid + oy],
-            rotation=90.0, layer="A-COTAS", style="MCP-ARQ",
+            "rotated",
+            [[left, b0 + oy], [left, b1 + oy]],
+            [left - off, mid + oy],
+            rotation=90.0,
+            layer="A-COTAS",
+            style="MCP-ARQ",
         )
 
 
-def draw_axes(s, vert: list, horiz: list, ox: float, oy: float,
-              overs: dict, bubble: float = 0.45, text: float = 0.3) -> None:
+def draw_axes(
+    s,
+    vert: list,
+    horiz: list,
+    ox: float,
+    oy: float,
+    overs: dict,
+    bubble: float = 0.45,
+    text: float = 0.3,
+) -> None:
     s.grid.create_construction_grid(
         vertical_positions=[v + ox for v in vert],
         horizontal_positions=[h + oy for h in horiz],
-        bubble_radius=bubble, overshoot=1.0, text_height=text, layer="A-EJES",
-        overshoot_bottom=overs.get("bottom", 1.0), overshoot_top=overs.get("top", 1.0),
-        overshoot_left=overs.get("left", 1.0), overshoot_right=overs.get("right", 1.0),
+        bubble_radius=bubble,
+        overshoot=1.0,
+        text_height=text,
+        layer="A-EJES",
+        overshoot_bottom=overs.get("bottom", 1.0),
+        overshoot_top=overs.get("top", 1.0),
+        overshoot_left=overs.get("left", 1.0),
+        overshoot_right=overs.get("right", 1.0),
     )
 
 

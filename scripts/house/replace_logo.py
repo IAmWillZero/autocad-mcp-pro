@@ -97,8 +97,7 @@ def _arc(block, cx: float, cy: float, r: float, a0: float, a1: float, color: int
     return e
 
 
-def _text(block, value: str, x: float, y: float, height: float,
-          color: int = BLACK):
+def _text(block, value: str, x: float, y: float, height: float, color: int = BLACK):
     e = block.AddText(value, variant_point(x, y), height)
     e.Layer = "A-ROTULO"
     e.Color = color
@@ -123,8 +122,7 @@ def _remove_old_logo(block) -> None:
             continue
 
 
-def _draw_ucv_logo(block, cx: float = 0.020, cy: float = 0.018,
-                   size: float = 0.012) -> None:
+def _draw_ucv_logo(block, cx: float = 0.020, cy: float = 0.018, size: float = 0.012) -> None:
     """Dibuja el escudo UCV basado en la imagen proporcionada.
 
     Escudo con borde exterior, lineas curvas concéntricas y forma central
@@ -133,18 +131,22 @@ def _draw_ucv_logo(block, cx: float = 0.020, cy: float = 0.018,
     s = size / 0.012  # escala relativa al tamaño base
 
     # Borde exterior del escudo (forma aproximadamente triangular con base curva)
-    _poly(block, [
-        (cx - 0.5 * s, cy + 0.0 * s),   # punta inferior izquierda
-        (cx - 0.45 * s, cy + 1.30 * s), # sube por la izquierda
-        (cx - 0.30 * s, cy + 1.75 * s), # hombro izquierdo
-        (cx - 0.10 * s, cy + 1.95 * s), # cerca de la cima izquierda
-        (cx + 0.00 * s, cy + 2.05 * s), # punta superior central
-        (cx + 0.10 * s, cy + 1.95 * s), # cerca de la cima derecha
-        (cx + 0.30 * s, cy + 1.75 * s), # hombro derecho
-        (cx + 0.45 * s, cy + 1.30 * s), # baja por la derecha
-        (cx + 0.50 * s, cy + 0.0 * s),  # punta inferior derecha
-        (cx - 0.50 * s, cy + 0.0 * s),  # cierra base inferior
-    ], closed=True)
+    _poly(
+        block,
+        [
+            (cx - 0.5 * s, cy + 0.0 * s),  # punta inferior izquierda
+            (cx - 0.45 * s, cy + 1.30 * s),  # sube por la izquierda
+            (cx - 0.30 * s, cy + 1.75 * s),  # hombro izquierdo
+            (cx - 0.10 * s, cy + 1.95 * s),  # cerca de la cima izquierda
+            (cx + 0.00 * s, cy + 2.05 * s),  # punta superior central
+            (cx + 0.10 * s, cy + 1.95 * s),  # cerca de la cima derecha
+            (cx + 0.30 * s, cy + 1.75 * s),  # hombro derecho
+            (cx + 0.45 * s, cy + 1.30 * s),  # baja por la derecha
+            (cx + 0.50 * s, cy + 0.0 * s),  # punta inferior derecha
+            (cx - 0.50 * s, cy + 0.0 * s),  # cierra base inferior
+        ],
+        closed=True,
+    )
 
     # Linea interior superior (arco del escudo)
     _arc(block, cx, cy + 0.85 * s, 0.42 * s, 180.0, 0.0)

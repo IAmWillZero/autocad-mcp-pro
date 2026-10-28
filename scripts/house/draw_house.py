@@ -67,8 +67,12 @@ def _frame_viewport(
         ours = next((v for v in viewports if abs(float(v.Width) - vp_width) < 2.0), None)
         if ours is None:
             s.layouts.create_viewport(
-                name, center=[148.5, 210.0], width=vp_width, height=372.0,
-                scale=scale, view_center=[cx, cy],
+                name,
+                center=[148.5, 210.0],
+                width=vp_width,
+                height=372.0,
+                scale=scale,
+                view_center=[cx, cy],
             )
             _t.sleep(0.6)
             viewports = _collect()
@@ -170,12 +174,17 @@ def _redraw_dimensions(s: AutoCADService) -> None:
     ]:
         draw_left_dims(s, breaks, 1.0, off, 0.0)
     # planta alta (desplazada +16 en X)
-    for off, breaks in [(3.0, [1.0, 2.5, 4.0, 5.0, 7.0]), (4.4, [1.0, 4.0, 7.0]),
-                        (5.8, [1.0, 7.0])]:
+    for off, breaks in [
+        (3.0, [1.0, 2.5, 4.0, 5.0, 7.0]),
+        (4.4, [1.0, 4.0, 7.0]),
+        (5.8, [1.0, 7.0]),
+    ]:
         draw_bottom_dims(s, breaks, 4.0, off, OX)
-    for off, breaks in [(1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
-                        (2.8, [4.0, 10.5, 15.5, 21.0]),
-                        (4.2, [4.0, 15.5, 21.0])]:
+    for off, breaks in [
+        (1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
+        (2.8, [4.0, 10.5, 15.5, 21.0]),
+        (4.2, [4.0, 15.5, 21.0]),
+    ]:
         draw_left_dims(s, breaks, 1.0 + OX, off, 0.0)
 
     # Precision: maximo 3 decimales, sin ceros finales (DIMOVERRIDE fiable).
@@ -210,10 +219,17 @@ def _poche_walls(s: AutoCADService) -> int:
     return n
 
 
-def _draw_area_table(s: AutoCADService, rows: list[tuple[str, str, float]], x0: float = 9.6,
-                     y_top: float = 20.5, w1: float = 2.9, w2: float = 1.7,
-                     rh: float = 0.55, th: float = 0.28,
-                     header: str = "CUADRO DE AREAS") -> int:
+def _draw_area_table(
+    s: AutoCADService,
+    rows: list[tuple[str, str, float]],
+    x0: float = 9.6,
+    y_top: float = 20.5,
+    w1: float = 2.9,
+    w2: float = 1.7,
+    rh: float = 0.55,
+    th: float = 0.28,
+    header: str = "CUADRO DE AREAS",
+) -> int:
     """Dibuja un cuadro de superficies (ambiente | area) en la zona libre.
 
     Nota: ``create_table`` (tabla nativa ``AcDbTable``) existe como herramienta, pero en
@@ -320,11 +336,21 @@ def main() -> int:
     log("bloques ok")
 
     n1 = _draw_floor(
-        s, D.ROOMS1, D.X1, D.Y1, D.OPEN1, D.AXES_V1, D.AXES_H1, D.FIX1, D.TITLE1,
+        s,
+        D.ROOMS1,
+        D.X1,
+        D.Y1,
+        D.OPEN1,
+        D.AXES_V1,
+        D.AXES_H1,
+        D.FIX1,
+        D.TITLE1,
         bottom_levels=[(1.4, [1.0, 2.5, 4.0, 7.0]), (2.8, [1.0, 4.0, 7.0]), (4.2, [1.0, 7.0])],
-        left_levels=[(1.4, [4.0, 6.0, 8.5, 11.0, 13.0, 15.5, 18.0, 21.0]),
-                     (2.8, [4.0, 8.5, 13.0, 18.0, 21.0]),
-                     (4.2, [4.0, 13.0, 21.0])],
+        left_levels=[
+            (1.4, [4.0, 6.0, 8.5, 11.0, 13.0, 15.5, 18.0, 21.0]),
+            (2.8, [4.0, 8.5, 13.0, 18.0, 21.0]),
+            (4.2, [4.0, 13.0, 21.0]),
+        ],
     )
     log("PISO1 muros:", n1)
     s.layer_tools.set_current_layer("A-SITIO")
@@ -338,12 +364,21 @@ def main() -> int:
 
     _pin(s)
     n2 = _draw_floor(
-        s, D.ROOMS2, D.X2, D.Y2, D.OPEN2, D.AXES_V2, D.AXES_H2, D.FIX2, D.TITLE2,
-        bottom_levels=[(3.0, [1.0, 2.5, 4.0, 5.0, 7.0]), (4.4, [1.0, 4.0, 7.0]),
-                       (5.8, [1.0, 7.0])],
-        left_levels=[(1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
-                     (2.8, [4.0, 10.5, 15.5, 21.0]),
-                     (4.2, [4.0, 15.5, 21.0])],
+        s,
+        D.ROOMS2,
+        D.X2,
+        D.Y2,
+        D.OPEN2,
+        D.AXES_V2,
+        D.AXES_H2,
+        D.FIX2,
+        D.TITLE2,
+        bottom_levels=[(3.0, [1.0, 2.5, 4.0, 5.0, 7.0]), (4.4, [1.0, 4.0, 7.0]), (5.8, [1.0, 7.0])],
+        left_levels=[
+            (1.4, [4.0, 7.0, 10.5, 13.0, 15.5, 18.0, 21.0]),
+            (2.8, [4.0, 10.5, 15.5, 21.0]),
+            (4.2, [4.0, 15.5, 21.0]),
+        ],
         ox=OX,
     )
     log("PISO2 muros:", n2)
@@ -364,14 +399,14 @@ def main() -> int:
 
     rows = [("PLANTA BAJA", "h", 0.0)]
     a1 = 0.0
-    for (label, i0, i1, j0, j1) in D.ROOMS1:
+    for label, i0, i1, j0, j1 in D.ROOMS1:
         a = abs(D.X1[i1] - D.X1[i0]) * abs(D.Y1[j1] - D.Y1[j0])
         a1 += a
         rows.append((label, "r", a))
     rows.append(("SUBTOTAL PLANTA BAJA", "h", a1))
     rows.append(("PLANTA ALTA", "h", 0.0))
     a2 = 0.0
-    for (label, i0, i1, j0, j1) in D.ROOMS2:
+    for label, i0, i1, j0, j1 in D.ROOMS2:
         a = abs(D.X2[i1] - D.X2[i0]) * abs(D.Y2[j1] - D.Y2[j0])
         a2 += a
         rows.append((label, "r", a))
@@ -414,8 +449,12 @@ def main() -> int:
         log("layout:", lay.get("message", lay))
         vp = _retry(
             lambda name=name, vcx=vcx, vcy=vcy: s.layouts.create_viewport(
-                name, center=[148.5, 210.0], width=170.0, height=372.0,
-                scale=0.01, view_center=[vcx, vcy],
+                name,
+                center=[148.5, 210.0],
+                width=170.0,
+                height=372.0,
+                scale=0.01,
+                view_center=[vcx, vcy],
             ),
             tries=6,
             delay=1.5,

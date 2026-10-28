@@ -36,15 +36,18 @@ def main() -> int:
     for m in ("InsertBlock", "AddBlockReference", "AddTable", "AddJoggedDimension"):
         print(m, hasattr(block, m))
 
-    for args in (
-        (variant_point(0.05, 0.05), "OBJ-SOFA-MOD-260", 0.008, 0.008, 0.008, 0.0),
-    ):
+    for args in ((variant_point(0.05, 0.05), "OBJ-SOFA-MOD-260", 0.008, 0.008, 0.008, 0.0),):
         try:
             ref = block.InsertBlock(*args)
             print("InsertBlock OK", ref.ObjectName)
             mn, mx = ref.GetBoundingBox()
-            print("  bbox", round(float(mn[0]), 4), round(float(mn[1]), 4),
-                  round(float(mx[0]), 4), round(float(mx[1]), 4))
+            print(
+                "  bbox",
+                round(float(mn[0]), 4),
+                round(float(mn[1]), 4),
+                round(float(mx[0]), 4),
+                round(float(mx[1]), 4),
+            )
             ref.Delete()
         except Exception as exc:  # noqa: BLE001
             print("InsertBlock FALLO", exc)

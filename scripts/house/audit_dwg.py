@@ -81,8 +81,16 @@ def main() -> int:
         except Exception:  # noqa: BLE001
             return None
 
-    for v in ("INSUNITS", "LUNITS", "LUPREC", "DIMSCALE", "LTSCALE", "MEASUREMENT",
-              "EXTMIN", "EXTMAX"):
+    for v in (
+        "INSUNITS",
+        "LUNITS",
+        "LUPREC",
+        "DIMSCALE",
+        "LTSCALE",
+        "MEASUREMENT",
+        "EXTMIN",
+        "EXTMAX",
+    ):
         print(f"{v:14}:", var(v))
 
     # --- entidades ---
@@ -100,8 +108,9 @@ def main() -> int:
             by_type[oname] += 1
             if oname == "AcDbText":
                 lo, hi = e.GetBoundingBox()
-                texts.append((str(e.TextString),
-                              (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1]))))
+                texts.append(
+                    (str(e.TextString), (float(lo[0]), float(lo[1]), float(hi[0]), float(hi[1])))
+                )
         except Exception:  # noqa: BLE001
             continue
 

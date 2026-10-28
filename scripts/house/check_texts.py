@@ -1,4 +1,5 @@
 """Detecta solapes entre textos (AcDbText) en el ModelSpace de CASA.dwg."""
+
 from __future__ import annotations
 
 import sys

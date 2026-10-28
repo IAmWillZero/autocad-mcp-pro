@@ -1067,10 +1067,7 @@ def main(argv: list[str]) -> int:
     catalogo(doc, bloques, 20, "A4_BLOQUES_2", 5)
     biblioteca(doc, bloques)
     filas_limpias = datos(doc, filas)
-    print(
-        "laminas creadas: A4_BLOQUES_1, A4_BLOQUES_2, "
-        "A4_BIBLIOTECA_1, A4_BIBLIOTECA_2, A4_DATOS"
-    )
+    print("laminas creadas: A4_BLOQUES_1, A4_BLOQUES_2, A4_BIBLIOTECA_1, A4_BIBLIOTECA_2, A4_DATOS")
 
     xlsx = ROOT / "out" / "cuadro_datos.xlsx"
     exportar_excel(filas_limpias, xlsx)

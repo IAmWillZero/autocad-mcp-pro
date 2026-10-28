@@ -128,8 +128,9 @@ def _poly(s: AutoCADService, pts2d: list[list[float]], closed: bool = True) -> l
     return list(r.get("handles", [])) if r.get("success") else []
 
 
-def _zone(s: AutoCADService, layer: str, pts: list[list[float]], label: str,
-          anchor: list[float]) -> None:
+def _zone(
+    s: AutoCADService, layer: str, pts: list[list[float]], label: str, anchor: list[float]
+) -> None:
     color_name, pattern, trans, scale = ZONE_STYLE[layer]
     s.layer_tools.set_current_layer(layer)
     handles = _poly(s, pts)
@@ -142,8 +143,9 @@ def _zone(s: AutoCADService, layer: str, pts: list[list[float]], label: str,
     h = max(0.10, min(0.22, available / (len(label) * 0.95)))
     w = len(label) * 0.95 * h
     s.layer_tools.set_current_layer("A-TEXTOS")
-    s.geometry.create_text([round(anchor[0] - w / 2.0, 3), round(anchor[1], 3)], label,
-                           round(h, 3), "bylayer")
+    s.geometry.create_text(
+        [round(anchor[0] - w / 2.0, 3), round(anchor[1], 3)], label, round(h, 3), "bylayer"
+    )
 
 
 def _terreno(s: AutoCADService, ox: float = 0.0) -> None:
@@ -151,8 +153,9 @@ def _terreno(s: AutoCADService, ox: float = 0.0) -> None:
     _poly(s, _rect(ox, 0.0, ox + 8.0, 23.0))
 
 
-def _outline(s: AutoCADService, pts: list[list[float]], ox: float,
-             layer: str = "A-PROYECC") -> None:
+def _outline(
+    s: AutoCADService, pts: list[list[float]], ox: float, layer: str = "A-PROYECC"
+) -> None:
     s.layer_tools.set_current_layer(layer)
     shifted = [[round(p[0] + ox, 3), round(p[1], 3)] for p in pts]
     _poly(s, shifted, closed=True)
@@ -175,8 +178,9 @@ def _legend(s: AutoCADService, x0: float, y_top: float) -> None:
         h = _poly(s, _rect(x0, y - 0.4, x0 + sw, y))
         if h:
             _c, pattern, trans, scale = ZONE_STYLE[layer]
-            s.geometry.create_hatch(h, pattern, scale=scale, layer=layer, color="bylayer",
-                                    transparency=trans)
+            s.geometry.create_hatch(
+                h, pattern, scale=scale, layer=layer, color="bylayer", transparency=trans
+            )
         s.layer_tools.set_current_layer("A-TEXTOS")
         s.geometry.create_text([x0 + sw + 0.2, y - 0.3], txt, 0.22, "bylayer")
         y -= 0.8
@@ -198,8 +202,9 @@ def _scale_bar(s: AutoCADService, x0: float, y0: float, n: int = 5, step: float 
     total = n * step
     for i in range(n):
         if i % 2 == 0:
-            s.geometry.create_rectangle([x0 + i * step, y0], [x0 + (i + 1) * step, y0 + 0.2],
-                                        "bylayer")
+            s.geometry.create_rectangle(
+                [x0 + i * step, y0], [x0 + (i + 1) * step, y0 + 0.2], "bylayer"
+            )
     s.geometry.create_rectangle([x0, y0], [x0 + total, y0 + 0.2], "bylayer")
     for i in range(n + 1):
         s.geometry.create_text([x0 + i * step - 0.06, y0 - 0.32], str(i), 0.18, "bylayer")
@@ -229,7 +234,7 @@ def _section_mark(s: AutoCADService, x: float, y0: float, y1: float, label: str)
 
 def _room_zones(s: AutoCADService, rooms: list, X: list, Y: list, ox: float) -> None:
     """Fase 3: poligono independiente por ambiente, con su categoria."""
-    for (label, i0, i1, j0, j1) in rooms:
+    for label, i0, i1, j0, j1 in rooms:
         x0, x1 = X[i0] + ox, X[i1] + ox
         y0, y1 = Y[j0], Y[j1]
         cat = U.ZONE.get(label, "LIB")
@@ -238,8 +243,14 @@ def _room_zones(s: AutoCADService, rooms: list, X: list, Y: list, ox: float) -> 
         _zone(s, layer, pts, label, [(x0 + x1) / 2.0, (y0 + y1) / 2.0 - 0.05])
 
 
-def _stair_plan(s: AutoCADService, stair: dict, ox: float = 0.0, oy: float = 0.0,
-                label: str = "SUBE", outline: bool = True) -> None:
+def _stair_plan(
+    s: AutoCADService,
+    stair: dict,
+    ox: float = 0.0,
+    oy: float = 0.0,
+    label: str = "SUBE",
+    outline: bool = True,
+) -> None:
     """Escalera en L completa: dos tramos, descanso, barrido y flecha de sentido.
 
     ``outline=False`` se usa en plantas arquitectonicas: evita superponer el
@@ -314,7 +325,9 @@ def _zoning(s: AutoCADService) -> None:
             _zone(s, "Z-AREA-LIBRE", pts, _lib_label(pts), _mid(pts))
     for pts in (U.BALCON_FRONTAL, U.BALCON_POST, U.TERRAZA_NOTCH):
         if pts:
-            _zone(s, "Z-AREA-LIBRE", [[p[0] + OX, p[1]] for p in pts], _lib_label(pts), _mid(pts, OX))
+            _zone(
+                s, "Z-AREA-LIBRE", [[p[0] + OX, p[1]] for p in pts], _lib_label(pts), _mid(pts, OX)
+            )
     s.layer_tools.set_current_layer("A-TEXTOS")
     s.geometry.create_text([0.0, 23.45], "PLANTA BAJA - ZONIFICACION", 0.26, "bylayer")
     s.geometry.create_text([OX, 23.45], "PLANTA ALTA - ZONIFICACION", 0.26, "bylayer")
@@ -343,17 +356,47 @@ def _draw_plans(s: AutoCADService) -> None:
     define_blocks(s)
     bottom = [(1.4, [1.0, 4.0, 5.5, 5.8, 7.0]), (2.8, [1.0, 4.0, 7.0])]
     plans = (
-        (U.ROOMS1, U.X1, U.Y1, U.OPEN1, U.AXES_V1, U.AXES_H1, U.FIX1, U.TITLE1, U.PB_OX,
-         [(1.4, [4.0, 6.67, 8.33, 11.33, 14.5, 16.0, 18.0]),
-          (2.8, [4.0, 8.33, 11.33, 14.5, 18.0])]),
-        (U.ROOMS2, U.X2, U.Y2, U.OPEN2, U.AXES_V2, U.AXES_H2, U.FIX2, U.TITLE2, U.PA_OX,
-         [(1.4, [4.0, 8.0, 8.33, 11.33, 13.66, 16.0]),
-          (2.8, [4.0, 8.33, 11.33, 16.0])]),
+        (
+            U.ROOMS1,
+            U.X1,
+            U.Y1,
+            U.OPEN1,
+            U.AXES_V1,
+            U.AXES_H1,
+            U.FIX1,
+            U.TITLE1,
+            U.PB_OX,
+            [
+                (1.4, [4.0, 6.67, 8.33, 11.33, 14.5, 16.0, 18.0]),
+                (2.8, [4.0, 8.33, 11.33, 14.5, 18.0]),
+            ],
+        ),
+        (
+            U.ROOMS2,
+            U.X2,
+            U.Y2,
+            U.OPEN2,
+            U.AXES_V2,
+            U.AXES_H2,
+            U.FIX2,
+            U.TITLE2,
+            U.PA_OX,
+            [(1.4, [4.0, 8.0, 8.33, 11.33, 13.66, 16.0]), (2.8, [4.0, 8.33, 11.33, 16.0])],
+        ),
     )
     for rooms, X, Y, opens, av, ah, fix, title, ox, left in plans:
         _draw_floor(
-            s, rooms, X, Y, opens, av, ah, fix, title,
-            bottom_levels=bottom, left_levels=left,
+            s,
+            rooms,
+            X,
+            Y,
+            opens,
+            av,
+            ah,
+            fix,
+            title,
+            bottom_levels=bottom,
+            left_levels=left,
             ox=ox,
         )
         _terreno(s, ox)
@@ -371,16 +414,25 @@ def _draw_plans(s: AutoCADService) -> None:
 
 def _line(s: AutoCADService, p0, p1, layer: str = "A-MUROS-TABIQ") -> None:
     s.layer_tools.set_current_layer(layer)
-    s.geometry.create_line([round(p0[0], 3), round(p0[1], 3)],
-                           [round(p1[0], 3), round(p1[1], 3)], "bylayer")
+    s.geometry.create_line(
+        [round(p0[0], 3), round(p0[1], 3)], [round(p1[0], 3), round(p1[1], 3)], "bylayer"
+    )
 
 
-def _band_rect(s: AutoCADService, x0: float, y0: float, x1: float, y1: float,
-               layer: str = "A-MUROS-TABIQ", fill: bool = True) -> list:
+def _band_rect(
+    s: AutoCADService,
+    x0: float,
+    y0: float,
+    x1: float,
+    y1: float,
+    layer: str = "A-MUROS-TABIQ",
+    fill: bool = True,
+) -> list:
     """Rectangulo (muro/losa/vanos en corte o alzado) con relleno SOLID opcional."""
     s.layer_tools.set_current_layer(layer)
-    r = s.geometry.create_polyline([[x0, y0], [x1, y0], [x1, y1], [x0, y1]],
-                                   closed=True, color="bylayer")
+    r = s.geometry.create_polyline(
+        [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], closed=True, color="bylayer"
+    )
     h = list(r.get("handles", [])) if r.get("success") else []
     if fill and h:
         s.geometry.create_hatch(h, "SOLID", layer=layer, color="bylayer")
@@ -405,8 +457,18 @@ def _stair_section(s: AutoCADService, sy, sz, stair: dict) -> None:
     s.geometry.create_polyline(pts, closed=False, color="bylayer")
 
 
-def _corte(s: AutoCADService, ox: float, oy: float, cut_x: float, y0: float, y1: float,
-           label: str, pb_walls: list, pa_walls: list, stair: dict | None = None) -> None:
+def _corte(
+    s: AutoCADService,
+    ox: float,
+    oy: float,
+    cut_x: float,
+    y0: float,
+    y1: float,
+    label: str,
+    pb_walls: list,
+    pa_walls: list,
+    stair: dict | None = None,
+) -> None:
     """Corte esquematico: horizontal = Y (profundidad), vertical = Z (altura)."""
     t = 0.15
     sy = lambda y: round(ox + (y - y0), 3)
@@ -418,11 +480,18 @@ def _corte(s: AutoCADService, ox: float, oy: float, cut_x: float, y0: float, y1:
     _band_rect(s, sy(y0), sz(U.H_ENTREPISO - 0.15), sy(y1), sz(U.H_ENTREPISO), "A-MUROS-CARGA")
     _band_rect(s, sy(y0), sz(U.H_TECHO - 0.15), sy(y1), sz(U.H_TECHO), "A-MUROS-CARGA")
     for yw in pb_walls:
-        _band_rect(s, sy(yw) - t / 2, sz(0), sy(yw) + t / 2, sz(U.H_ENTREPISO - 0.15),
-                   "A-MUROS-TABIQ")
+        _band_rect(
+            s, sy(yw) - t / 2, sz(0), sy(yw) + t / 2, sz(U.H_ENTREPISO - 0.15), "A-MUROS-TABIQ"
+        )
     for yw in pa_walls:
-        _band_rect(s, sy(yw) - t / 2, sz(U.H_ENTREPISO), sy(yw) + t / 2,
-                   sz(U.H_TECHO - 0.15), "A-MUROS-TABIQ")
+        _band_rect(
+            s,
+            sy(yw) - t / 2,
+            sz(U.H_ENTREPISO),
+            sy(yw) + t / 2,
+            sz(U.H_TECHO - 0.15),
+            "A-MUROS-TABIQ",
+        )
     if stair:
         _stair_section(s, sy, sz, stair)
     for z, lab in ((0.0, "+0.00"), (U.H_ENTREPISO, "+2.80"), (U.H_TECHO, "+5.60")):
@@ -431,8 +500,16 @@ def _corte(s: AutoCADService, ox: float, oy: float, cut_x: float, y0: float, y1:
     _txt(s, sy(y0) - 1.0, sz(U.H_TECHO) + 0.6, f"CORTE {label} (x={cut_x:.2f})", 0.24)
 
 
-def _corte_t(s: AutoCADService, ox: float, oy: float, cut_y: float, x0: float, x1: float,
-             label: str, walls: list) -> None:
+def _corte_t(
+    s: AutoCADService,
+    ox: float,
+    oy: float,
+    cut_y: float,
+    x0: float,
+    x1: float,
+    label: str,
+    walls: list,
+) -> None:
     """Corte transversal: horizontal = X (ancho), vertical = Z (altura)."""
     t = 0.15
     sx = lambda x: round(ox + (x - x0), 3)
@@ -444,18 +521,33 @@ def _corte_t(s: AutoCADService, ox: float, oy: float, cut_y: float, x0: float, x
     _band_rect(s, sx(x0), sz(U.H_ENTREPISO - 0.15), sx(x1), sz(U.H_ENTREPISO), "A-MUROS-CARGA")
     _band_rect(s, sx(x0), sz(U.H_TECHO - 0.15), sx(x1), sz(U.H_TECHO), "A-MUROS-CARGA")
     for xw in walls:
-        _band_rect(s, sx(xw) - t / 2, sz(0), sx(xw) + t / 2, sz(U.H_ENTREPISO - 0.15),
-                   "A-MUROS-TABIQ")
-        _band_rect(s, sx(xw) - t / 2, sz(U.H_ENTREPISO), sx(xw) + t / 2,
-                   sz(U.H_TECHO - 0.15), "A-MUROS-TABIQ")
+        _band_rect(
+            s, sx(xw) - t / 2, sz(0), sx(xw) + t / 2, sz(U.H_ENTREPISO - 0.15), "A-MUROS-TABIQ"
+        )
+        _band_rect(
+            s,
+            sx(xw) - t / 2,
+            sz(U.H_ENTREPISO),
+            sx(xw) + t / 2,
+            sz(U.H_TECHO - 0.15),
+            "A-MUROS-TABIQ",
+        )
     for z, lab in ((0.0, "+0.00"), (U.H_ENTREPISO, "+2.80"), (U.H_TECHO, "+5.60")):
         _line(s, [sx(x0) - 1.7, sz(z)], [sx(x0) - 1.2, sz(z)], "A-EJES")
         _txt(s, sx(x0) - 1.1, sz(z) - 0.08, lab, 0.18)
     _txt(s, sx(x0) - 0.6, sz(U.H_TECHO) + 0.6, f"CORTE {label} (y={cut_y:.2f})", 0.24)
 
 
-def _elevacion(s: AutoCADService, ox: float, oy: float, x0: float, x1: float, label: str,
-               vanos: list, balcon: bool = False) -> None:
+def _elevacion(
+    s: AutoCADService,
+    ox: float,
+    oy: float,
+    x0: float,
+    x1: float,
+    label: str,
+    vanos: list,
+    balcon: bool = False,
+) -> None:
     """Elevacion esquematica: horizontal = X (ancho), vertical = Z (altura)."""
     sx = lambda x: round(ox + (x - x0), 3)
     sz = lambda z: round(oy + z, 3)
@@ -464,34 +556,74 @@ def _elevacion(s: AutoCADService, ox: float, oy: float, x0: float, x1: float, la
     _line(s, [sx(x0 - 0.15), sz(U.H_ENTREPISO)], [sx(x1 + 0.15), sz(U.H_ENTREPISO)], "A-PROYECC")
     _line(s, [sx(x0 - 0.25), sz(U.H_TECHO)], [sx(x1 + 0.25), sz(U.H_TECHO)], "A-PROYECC")
     if balcon:
-        _band_rect(s, sx(x0 - 0.2), sz(U.H_ENTREPISO - 0.15), sx(x1 + 0.2), sz(U.H_ENTREPISO),
-                   "A-PROYECC")
+        _band_rect(
+            s, sx(x0 - 0.2), sz(U.H_ENTREPISO - 0.15), sx(x1 + 0.2), sz(U.H_ENTREPISO), "A-PROYECC"
+        )
         for xx in (x0 - 0.2, x1 + 0.2):
             _line(s, [sx(xx), sz(U.H_ENTREPISO)], [sx(xx), sz(U.H_ENTREPISO + 1.0)], "A-PROYECC")
-        _line(s, [sx(x0 - 0.2), sz(U.H_ENTREPISO + 1.0)], [sx(x1 + 0.2), sz(U.H_ENTREPISO + 1.0)],
-              "A-PROYECC")
-    for (a, b, z0, z1) in vanos:
+        _line(
+            s,
+            [sx(x0 - 0.2), sz(U.H_ENTREPISO + 1.0)],
+            [sx(x1 + 0.2), sz(U.H_ENTREPISO + 1.0)],
+            "A-PROYECC",
+        )
+    for a, b, z0, z1 in vanos:
         _band_rect(s, sx(a), sz(z0), sx(b), sz(z1), "A-PUER-VENT", fill=False)
     _txt(s, sx(x0), sz(U.H_TECHO) + 0.6, label, 0.26)
 
 
 def _cortes(s: AutoCADService) -> None:
     """Lamina de cortes: A-A (longitudinal por la escalera) y B-B (transversal)."""
-    _corte(s, 70.0, 2.0, 5.0, 4.0, 16.0, "A-A",
-           pb_walls=[6.67, 8.33, 11.33, 14.5], pa_walls=[8.33, 11.33, 13.66], stair=U.STAIR)
+    _corte(
+        s,
+        70.0,
+        2.0,
+        5.0,
+        4.0,
+        16.0,
+        "A-A",
+        pb_walls=[6.67, 8.33, 11.33, 14.5],
+        pa_walls=[8.33, 11.33, 13.66],
+        stair=U.STAIR,
+    )
     _corte_t(s, 70.0, 12.0, 10.0, 1.0, 7.0, "B-B", walls=[4.0, 5.5])
-    _txt(s, 70.0, 1.0, "LOSAS Y MUROS: ANTEPROYECTO (0.15 m); ALT. ENTREPISO 2.80 m PENDIENTE",
-         0.18)
+    _txt(
+        s, 70.0, 1.0, "LOSAS Y MUROS: ANTEPROYECTO (0.15 m); ALT. ENTREPISO 2.80 m PENDIENTE", 0.18
+    )
 
 
 def _elevaciones(s: AutoCADService) -> None:
     """Lamina de elevaciones: frontal (SUR) y posterior (NORTE)."""
-    _elevacion(s, 92.0, 2.0, 1.0, 7.0, "ELEVACION FRONTAL (SUR)",
-               vanos=[(1.4, 3.7, 0.0, 2.40), (4.6, 5.5, 0.0, 2.10),
-                      (1.6, 3.4, 3.70, 4.90), (4.6, 6.4, 3.70, 4.90)], balcon=True)
-    _elevacion(s, 92.0, 12.0, 1.0, 7.0, "ELEVACION POSTERIOR (NORTE)",
-               vanos=[(1.6, 3.6, 0.0, 2.10), (4.6, 6.8, 1.0, 2.10),
-                      (1.6, 3.6, 3.70, 4.90), (4.7, 5.2, 4.20, 4.90), (5.8, 6.3, 4.20, 4.90)])
+    _elevacion(
+        s,
+        92.0,
+        2.0,
+        1.0,
+        7.0,
+        "ELEVACION FRONTAL (SUR)",
+        vanos=[
+            (1.4, 3.7, 0.0, 2.40),
+            (4.6, 5.5, 0.0, 2.10),
+            (1.6, 3.4, 3.70, 4.90),
+            (4.6, 6.4, 3.70, 4.90),
+        ],
+        balcon=True,
+    )
+    _elevacion(
+        s,
+        92.0,
+        12.0,
+        1.0,
+        7.0,
+        "ELEVACION POSTERIOR (NORTE)",
+        vanos=[
+            (1.6, 3.6, 0.0, 2.10),
+            (4.6, 6.8, 1.0, 2.10),
+            (1.6, 3.6, 3.70, 4.90),
+            (4.7, 5.2, 4.20, 4.90),
+            (5.8, 6.3, 4.20, 4.90),
+        ],
+    )
     _txt(s, 92.0, 1.0, "ALTURAS REFERENCIALES: N.P.T. +0.00 / +2.80 / +5.60 (PENDIENTE)", 0.18)
 
 
@@ -502,8 +634,9 @@ def _detalles(s: AutoCADService) -> None:
     ex, ey = 110.0, 2.0
     px = lambda x: round(ex + (x - st["x0"]) * k, 3)
     py = lambda y: round(ey + (y - st["y0"]) * k, 3)
-    _band_rect(s, px(st["x0"]), py(st["y0"]), px(st["x1"]), py(st["y1"]), "A-MUROS-TABIQ",
-               fill=False)
+    _band_rect(
+        s, px(st["x0"]), py(st["y0"]), px(st["x1"]), py(st["y1"]), "A-MUROS-TABIQ", fill=False
+    )
     fl, fr = st["x0"] + 0.9, st["x1"] - 0.9
     _line(s, [px(fl), py(st["y0"])], [px(fl), py(st["y1"])], "A-MUROS-TABIQ")
     _line(s, [px(fr), py(st["y0"])], [px(fr), py(st["y1"])], "A-MUROS-TABIQ")
@@ -514,19 +647,25 @@ def _detalles(s: AutoCADService) -> None:
         yy = st["y0"] + i * step
         _line(s, [px(st["x0"]), py(yy)], [px(fl), py(yy)], "A-MUROS-TABIQ")
         _line(s, [px(fr), py(yy)], [px(st["x1"]), py(yy)], "A-MUROS-TABIQ")
-    _line(s, [px(st["x0"]), py(st["y0"] + run)], [px(st["x1"]), py(st["y0"] + run)],
-          "A-MUROS-TABIQ")
+    _line(
+        s, [px(st["x0"]), py(st["y0"] + run)], [px(st["x1"]), py(st["y0"] + run)], "A-MUROS-TABIQ"
+    )
     _txt(s, px(st["x0"]), py(st["y1"]) + 0.8, "DETALLE ESCALERA (ESC. 1:50)", 0.24)
-    _txt(s, px(st["x0"]), py(st["y0"]) - 1.4,
-         "16 ALZADAS x 0.175 m / HUELLA 0.25 m / ANCHO UTIL 0.90 m", 0.18)
+    _txt(
+        s,
+        px(st["x0"]),
+        py(st["y0"]) - 1.4,
+        "16 ALZADAS x 0.175 m / HUELLA 0.25 m / ANCHO UTIL 0.90 m",
+        0.18,
+    )
 
     bx, by = 122.0, 2.0
     w, d = 1.5 * k, 2.33 * k
     _band_rect(s, bx, by, bx + w, by + d, "A-MUROS-TABIQ", fill=False)
-    _band_rect(s, bx + 0.2, by + d - 1.1, bx + 0.2 + 0.9, by + d - 0.2, "A-MOBILIARIO",
-               fill=False)
-    _band_rect(s, bx + 0.2, by + d - 2.0, bx + 0.2 + 0.55, by + d - 2.0 + 0.42,
-               "A-MOBILIARIO", fill=False)
+    _band_rect(s, bx + 0.2, by + d - 1.1, bx + 0.2 + 0.9, by + d - 0.2, "A-MOBILIARIO", fill=False)
+    _band_rect(
+        s, bx + 0.2, by + d - 2.0, bx + 0.2 + 0.55, by + d - 2.0 + 0.42, "A-MOBILIARIO", fill=False
+    )
     _band_rect(s, bx + w - 0.6, by + 0.3, bx + w - 0.2, by + 0.7, "A-MOBILIARIO", fill=False)
     _txt(s, bx, by + d + 0.8, "DETALLE SS.HH. (ESC. 1:50)", 0.24)
     _txt(s, bx, by - 1.4, "INODORO + LAVATORIO + DUCHA 1.50 x 2.33 m", 0.18)
@@ -537,9 +676,16 @@ def _detalles(s: AutoCADService) -> None:
     _txt(s, vx, vy + 2.1 * k + 0.6, "DETALLE DE VANOS (ESC. 1:50)", 0.24)
 
 
-def _frame_sheet(s: AutoCADService, layout: str, vcx: float, vcy: float,
-                 vpw: float = 150.0, vph: float = 244.0, scale: float = 0.01,
-                 center: tuple[float, float] = (148.5, 118.0)) -> None:
+def _frame_sheet(
+    s: AutoCADService,
+    layout: str,
+    vcx: float,
+    vcy: float,
+    vpw: float = 150.0,
+    vph: float = 244.0,
+    scale: float = 0.01,
+    center: tuple[float, float] = (148.5, 118.0),
+) -> None:
     """Deja UN viewport centrado en la hoja y a escala real (CustomScale).
 
     Evita el ``ZOOM`` por SendCommand: fija ``Target`` (centro del modelo) y
@@ -565,16 +711,30 @@ def _frame_sheet(s: AutoCADService, layout: str, vcx: float, vcy: float,
                 break
             except Exception:  # noqa: BLE001
                 _t.sleep(0.3)
-    _retry(lambda: s.layouts.create_viewport(
-        layout, center=[center[0], center[1]], width=vpw, height=vph,
-        scale=scale, view_center=[vcx, vcy]))
+    _retry(
+        lambda: s.layouts.create_viewport(
+            layout,
+            center=[center[0], center[1]],
+            width=vpw,
+            height=vph,
+            scale=scale,
+            view_center=[vcx, vcy],
+        )
+    )
     _retry(lambda: doc.Regen(0))
 
 
 def _set_pdf_device(s: AutoCADService, layout: str) -> None:
     """Fase 8/9: deja el layout listo para trazar a PDF en A3 (DWG To PDF.pc3)."""
-    pdf_pc3 = str(Path(os.environ.get("APPDATA", "")) / "Autodesk" / "AutoCAD 2026" / "R25.1"
-                  / "enu" / "plotters" / "DWG To PDF.pc3")
+    pdf_pc3 = str(
+        Path(os.environ.get("APPDATA", ""))
+        / "Autodesk"
+        / "AutoCAD 2026"
+        / "R25.1"
+        / "enu"
+        / "plotters"
+        / "DWG To PDF.pc3"
+    )
     if not os.path.exists(pdf_pc3):
         return
     try:
@@ -587,8 +747,9 @@ def _set_pdf_device(s: AutoCADService, layout: str) -> None:
         _log("aviso dispositivo PDF", layout, exc)
 
 
-def _cajetin(s: AutoCADService, layout: str, content: str, codigo: str, escala: str,
-             note: str = "") -> None:
+def _cajetin(
+    s: AutoCADService, layout: str, content: str, codigo: str, escala: str, note: str = ""
+) -> None:
     """Fase 8: membrete UCV en el espacio papel del layout (A4 horizontal)."""
     _retry(lambda: s.layouts.set_active_layout(layout))
     ps = _retry(lambda: as_dynamic(s.conn.doc.PaperSpace))
@@ -642,8 +803,16 @@ def main() -> int:
     name = _ensure_target(s)
     _log("Documento:", name)
 
-    for _lm in ("PLANTAS", "ZONIFICACION", "PLANTA BAJA", "PLANTA ALTA",
-                "CORTES", "ELEVACIONES", "DETALLES", "CUADROS"):
+    for _lm in (
+        "PLANTAS",
+        "ZONIFICACION",
+        "PLANTA BAJA",
+        "PLANTA ALTA",
+        "CORTES",
+        "ELEVACIONES",
+        "DETALLES",
+        "CUADROS",
+    ):
         try:
             s.conn.doc.Layouts.Item(_lm).Delete()
         except Exception:  # noqa: BLE001
@@ -684,15 +853,37 @@ def main() -> int:
     _detalles(s)
 
     # Fase 5: cuadros (areas y vanos).
-    _retry(lambda: _draw_area_table(
-        s, AR.table_rows(), x0=29.5, y_top=24.5, w1=4.6, w2=1.7, rh=0.44, th=0.17,
-        header="CUADRO DE AREAS"))
-    _retry(lambda: _draw_area_table(
-        s, AR.vanos_rows(), x0=29.5, y_top=13.4, w1=4.6, w2=1.0, rh=0.40, th=0.13,
-        header="CUADRO DE VANOS"))
+    _retry(
+        lambda: _draw_area_table(
+            s,
+            AR.table_rows(),
+            x0=29.5,
+            y_top=24.5,
+            w1=4.6,
+            w2=1.7,
+            rh=0.44,
+            th=0.17,
+            header="CUADRO DE AREAS",
+        )
+    )
+    _retry(
+        lambda: _draw_area_table(
+            s,
+            AR.vanos_rows(),
+            x0=29.5,
+            y_top=13.4,
+            w1=4.6,
+            w2=1.0,
+            rh=0.40,
+            th=0.13,
+            header="CUADRO DE VANOS",
+        )
+    )
     d = AR.schedule()
-    _log(f"areas: PB {d['total_pb']:.2f} / PA {d['total_pa']:.2f} / "
-         f"total {d['total']:.2f} / libre {d['area_libre']:.2f} ({d['libre_pct']:.1f}%)")
+    _log(
+        f"areas: PB {d['total_pb']:.2f} / PA {d['total_pa']:.2f} / "
+        f"total {d['total']:.2f} / libre {d['area_libre']:.2f} ({d['libre_pct']:.1f}%)"
+    )
 
     s.ops.zoom_extents()
 
@@ -707,21 +898,33 @@ def main() -> int:
         ("DETALLES", 118.0, 11.0, 150.0, 142.0, sc, "A-05"),
     )
     for nm, _vcx, _vcy, _w, _h, _sc, _cod in sheets:
-        _retry(lambda nm=nm: s.layouts.create_layout(
-            nm, media="ISO_A4_(297.00_x_210.00_MM)", plot_style_table="acad.ctb"))
+        _retry(
+            lambda nm=nm: s.layouts.create_layout(
+                nm, media="ISO_A4_(297.00_x_210.00_MM)", plot_style_table="acad.ctb"
+            )
+        )
         _set_pdf_device(s, nm)
     for nm, vcx, vcy, w, h, sc, _cod in sheets:
         _frame_sheet(s, nm, vcx, vcy, vpw=w, vph=h, scale=sc)
 
     # Fase 8: membrete UCV por lamina.
-    note = ("Anteproyecto referencial. Lote 8.00 x 23.00 m; construido 6.00 m (retiros "
-            "1.00 m). Frente SUR, fondo NORTE. SS.HH. 1 (PB), SS.HH. 2 (privado del dorm. "
-            "principal) y SS.HH. 3 (compartido) en PA. Muros 0.15 m. Alturas y areas "
-            "PENDIENTES de verificacion.")
-    _cajetin(s, "PLANTAS", "Plantas arquitectonicas PB + PA (cotas, ejes y vanos)",
-             "A-01", "1:150", note)
-    _cajetin(s, "ZONIFICACION", "Distribucion y zonificacion + cuadros de areas y vanos",
-             "A-02", "1:150", note)
+    note = (
+        "Anteproyecto referencial. Lote 8.00 x 23.00 m; construido 6.00 m (retiros "
+        "1.00 m). Frente SUR, fondo NORTE. SS.HH. 1 (PB), SS.HH. 2 (privado del dorm. "
+        "principal) y SS.HH. 3 (compartido) en PA. Muros 0.15 m. Alturas y areas "
+        "PENDIENTES de verificacion."
+    )
+    _cajetin(
+        s, "PLANTAS", "Plantas arquitectonicas PB + PA (cotas, ejes y vanos)", "A-01", "1:150", note
+    )
+    _cajetin(
+        s,
+        "ZONIFICACION",
+        "Distribucion y zonificacion + cuadros de areas y vanos",
+        "A-02",
+        "1:150",
+        note,
+    )
     _cajetin(s, "CORTES", "Cortes A-A (longitudinal) y B-B (transversal)", "A-03", "1:150", note)
     _cajetin(s, "ELEVACIONES", "Elevaciones frontal y posterior", "A-04", "1:150", note)
     _cajetin(s, "DETALLES", "Detalles de escalera, SS.HH. y vanos", "A-05", "1:150", note)

@@ -539,7 +539,6 @@ def _bookshelf():
     return d
 
 
-
 def _refrigerator():
     def d():
         return [
@@ -607,15 +606,23 @@ def _car():
     Origen en la esquina posterior izquierda. Incluye carroceria, techo,
     lunas, puertas, ruedas, espejos, faros y pilotos.
     """
+
     def d():
         return [
             # Carroceria: maletero, techo, capo y paragolpes.
             _poly(
                 s,
                 [
-                    (0.00, 0.40), (0.00, 1.40), (0.28, 1.60), (3.52, 1.60),
-                    (4.04, 1.46), (4.50, 1.14), (4.50, 0.66), (4.04, 0.34),
-                    (3.52, 0.20), (0.28, 0.20),
+                    (0.00, 0.40),
+                    (0.00, 1.40),
+                    (0.28, 1.60),
+                    (3.52, 1.60),
+                    (4.04, 1.46),
+                    (4.50, 1.14),
+                    (4.50, 0.66),
+                    (4.04, 0.34),
+                    (3.52, 0.20),
+                    (0.28, 0.20),
                 ],
                 MOB,
             ),

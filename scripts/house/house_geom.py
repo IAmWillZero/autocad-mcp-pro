@@ -33,7 +33,7 @@ def collect_walls(rooms: list, X: list, Y: list) -> dict:
     {key: (axis, coord, lo, hi, kind, layer)}
     """
     groups: dict = {}
-    for (_label, i0, i1, j0, j1) in rooms:
+    for _label, i0, i1, j0, j1 in rooms:
         x0, x1 = X[i0], X[i1]
         y0, y1 = Y[j0], Y[j1]
         for axis, coord, a, b in (
@@ -144,8 +144,9 @@ def draw_openings(s, openings: list) -> dict:
             # Bloque de puerta a escala real por ancho nominal; respaldo 0.90 escalado.
             block = DOOR_BLOCKS.get(round(w, 2))
             scale = 1.0 if block else w / 0.9
-            s.blocks.insert_block(block or "A-PUERTA-090", pos, scale=scale,
-                                  rotation=rot, layer="A-PUER-VENT")
+            s.blocks.insert_block(
+                block or "A-PUERTA-090", pos, scale=scale, rotation=rot, layer="A-PUER-VENT"
+            )
             doors += 1
         elif kind == "sliding":
             if abs(round(w, 2) - 2.0) < 1e-9:
@@ -154,8 +155,9 @@ def draw_openings(s, openings: list) -> dict:
                     pos, rot = [min(a, b), coord], 0.0
                 else:
                     pos, rot = [coord, min(a, b)], 90.0
-                s.blocks.insert_block(SLIDER_BLOCK_200, pos, scale=1.0,
-                                      rotation=rot, layer="A-PUER-VENT")
+                s.blocks.insert_block(
+                    SLIDER_BLOCK_200, pos, scale=1.0, rotation=rot, layer="A-PUER-VENT"
+                )
             else:
                 offs = (-0.04, 0.04)
                 for o in offs:

@@ -73,16 +73,20 @@ def main() -> int:
     V._legend(s, 19.5, 22.6)
     V._north(s, 26.8, 20.6)
     s.layer_tools.set_current_layer("A-TEXTOS")
-    s.geometry.create_text([0.0, 23.45],
-                           "PLANTA ALTA - ZONIFICACION (REVISION 4)", 0.26, "bylayer")
-    s.geometry.create_text([0.0, 22.95],
-                           "HALL INDEPENDIENTE A LAS 3 HABITACIONES Y SS.HH. / "
-                           "BALCON INTERIOR DESDE DORM. 3 A LA ESCALERA / ESCALERA EN L",
-                           0.15, "bylayer")
-    s.geometry.create_text([0.0, 22.55],
-                           "SS.HH. 2: 3.60 x 3.00 m (suite) / "
-                           "SS.HH. 3: 3.60 x 1.75 m (ducha + inodoro + lavatorio)",
-                           0.14, "bylayer")
+    s.geometry.create_text([0.0, 23.45], "PLANTA ALTA - ZONIFICACION (REVISION 4)", 0.26, "bylayer")
+    s.geometry.create_text(
+        [0.0, 22.95],
+        "HALL INDEPENDIENTE A LAS 3 HABITACIONES Y SS.HH. / "
+        "BALCON INTERIOR DESDE DORM. 3 A LA ESCALERA / ESCALERA EN L",
+        0.15,
+        "bylayer",
+    )
+    s.geometry.create_text(
+        [0.0, 22.55],
+        "SS.HH. 2: 3.60 x 3.00 m (suite) / SS.HH. 3: 3.60 x 1.75 m (ducha + inodoro + lavatorio)",
+        0.14,
+        "bylayer",
+    )
     s.ops.zoom_extents()
     doc.Save()
     print("Guardado:", OUT, flush=True)

@@ -85,7 +85,9 @@ def _setup_layers(s: AutoCADService) -> None:
             pass
 
 
-def _head(s: AutoCADService, tip: tuple[float, float], prev: tuple[float, float], size: float = 0.16) -> None:
+def _head(
+    s: AutoCADService, tip: tuple[float, float], prev: tuple[float, float], size: float = 0.16
+) -> None:
     dx, dy = tip[0] - prev[0], tip[1] - prev[1]
     ln = math.hypot(dx, dy)
     if ln < 1e-9:
@@ -100,33 +102,51 @@ def _head(s: AutoCADService, tip: tuple[float, float], prev: tuple[float, float]
 def _route(s: AutoCADService, pts: list[tuple[float, float]], label: str = "") -> None:
     s.layer_tools.set_current_layer("A-CIRCULACION")
     for p, q in zip(pts, pts[1:]):
-        s.geometry.create_line([round(p[0], 3), round(p[1], 3)],
-                               [round(q[0], 3), round(q[1], 3)], "bylayer")
+        s.geometry.create_line(
+            [round(p[0], 3), round(p[1], 3)], [round(q[0], 3), round(q[1], 3)], "bylayer"
+        )
     if len(pts) >= 2:
         _head(s, pts[-1], pts[-2])
     if label:
-        s.geometry.create_text([round(pts[0][0] + 0.08, 3), round(pts[0][1] + 0.12, 3)],
-                               label, 0.13, "bylayer")
+        s.geometry.create_text(
+            [round(pts[0][0] + 0.08, 3), round(pts[0][1] + 0.12, 3)], label, 0.13, "bylayer"
+        )
 
 
 def _draw_plans(s: AutoCADService) -> None:
     """Plantas sin mobiliario ni tablas; solo arquitectura y recorridos."""
     bottom = [(1.4, [1.0, 4.0, 5.2, 5.5, 5.8, 7.0]), (2.8, [1.0, 4.0, 7.0])]
     plans = (
-        (U.ROOMS1, U.X1, U.Y1, U.OPEN1, U.AXES_V1, U.AXES_H1, U.TITLE1, U.PB_OX,
-         [(1.4, [4.0, 8.33, 11.33, 14.5, 16.0, 18.0]),
-          (2.8, [4.0, 8.33, 11.33, 14.5, 18.0])]),
-        (U.ROOMS2, U.X2, U.Y2, U.OPEN2, U.AXES_V2, U.AXES_H2, U.TITLE2, U.PA_OX,
-         [(1.4, [4.0, 8.0, 8.33, 11.33, 13.66, 16.0]),
-          (2.8, [4.0, 8.33, 11.33, 16.0])]),
+        (
+            U.ROOMS1,
+            U.X1,
+            U.Y1,
+            U.OPEN1,
+            U.AXES_V1,
+            U.AXES_H1,
+            U.TITLE1,
+            U.PB_OX,
+            [(1.4, [4.0, 8.33, 11.33, 14.5, 16.0, 18.0]), (2.8, [4.0, 8.33, 11.33, 14.5, 18.0])],
+        ),
+        (
+            U.ROOMS2,
+            U.X2,
+            U.Y2,
+            U.OPEN2,
+            U.AXES_V2,
+            U.AXES_H2,
+            U.TITLE2,
+            U.PA_OX,
+            [(1.4, [4.0, 8.0, 8.33, 11.33, 13.66, 16.0]), (2.8, [4.0, 8.33, 11.33, 16.0])],
+        ),
     )
     for rooms, X, Y, opens, av, ah, title, ox, left in plans:
-        V._draw_floor(s, rooms, X, Y, opens, av, ah, [], title,
-                      bottom_levels=bottom, left_levels=left, ox=ox)
+        V._draw_floor(
+            s, rooms, X, Y, opens, av, ah, [], title, bottom_levels=bottom, left_levels=left, ox=ox
+        )
         V._terreno(s, ox)
         V.draw_stair_u(s, U.STAIR, ox, 0.0)
-        V._level(s, X[0] + ox - 1.2, Y[0] + 0.3,
-                 U.NPT_PB if ox == U.PB_OX else U.NPT_PA)
+        V._level(s, X[0] + ox - 1.2, Y[0] + 0.3, U.NPT_PB if ox == U.PB_OX else U.NPT_PA)
     for pts in (U.JARDIN_FRONTAL, U.TERRAZA_POST, U.JARDIN_POST):
         if pts:
             V._outline(s, pts, U.PB_OX)
@@ -138,24 +158,32 @@ def _draw_plans(s: AutoCADService) -> None:
 def _circulation(s: AutoCADService) -> None:
     # Primer piso: ingreso por hall (no por oficina) -> escalera -> social.
     ox = U.PB_OX
-    _route(s, [(ox + 4.65, 4.35), (ox + 4.75, 6.10), (ox + 4.70, 7.95),
-               (ox + 4.72, 9.30), (ox + 3.45, 10.25), (ox + 3.45, 13.30),
-               (ox + 4.65, 15.25)], "INGRESO")
+    _route(
+        s,
+        [
+            (ox + 4.65, 4.35),
+            (ox + 4.75, 6.10),
+            (ox + 4.70, 7.95),
+            (ox + 4.72, 9.30),
+            (ox + 3.45, 10.25),
+            (ox + 3.45, 13.30),
+            (ox + 4.65, 15.25),
+        ],
+        "INGRESO",
+    )
     # Servicio: cocina -> lavanderia -> SS.HH. 1.
-    _route(s, [(ox + 5.15, 17.20), (ox + 5.15, 13.65), (ox + 6.35, 12.25)],
-           "SERVICIO")
+    _route(s, [(ox + 5.15, 17.20), (ox + 5.15, 13.65), (ox + 6.35, 12.25)], "SERVICIO")
     # Acceso independiente de la oficina desde el hall.
     _route(s, [(ox + 4.95, 5.65), (ox + 5.65, 5.65)], "OFICINA")
 
     # Segundo piso: escalera -> hall -> banos y corredor -> dormitorio 3.
     ox = U.PA_OX
-    _route(s, [(ox + 5.05, 11.05), (ox + 5.05, 12.45), (ox + 6.15, 13.55)],
-           "HALL")
-    _route(s, [(ox + 6.35, 12.80), (ox + 6.35, 9.15), (ox + 6.35, 7.90)],
-           "DORM. 3")
+    _route(s, [(ox + 5.05, 11.05), (ox + 5.05, 12.45), (ox + 6.15, 13.55)], "HALL")
+    _route(s, [(ox + 6.35, 12.80), (ox + 6.35, 9.15), (ox + 6.35, 7.90)], "DORM. 3")
     # Escalera -> sala de estar -> dormitorios 2 y principal.
-    _route(s, [(ox + 4.75, 10.55), (ox + 3.45, 10.20), (ox + 3.45, 9.40),
-               (ox + 2.10, 7.80)], "DORM. 2")
+    _route(
+        s, [(ox + 4.75, 10.55), (ox + 3.45, 10.20), (ox + 3.45, 9.40), (ox + 2.10, 7.80)], "DORM. 2"
+    )
     _route(s, [(ox + 3.45, 11.75), (ox + 2.10, 12.55)], "DORM. PRINCIPAL")
     s.layer_tools.set_current_layer("A-TEXTOS")
     s.geometry.create_text([ox + 1.25, 15.55], "SIN BALCON - VENTANAS AMPLIAS", 0.16, "bylayer")
@@ -179,8 +207,11 @@ def main() -> int:
     s.ops.zoom_extents()
     _retry(lambda: doc.Save())
     d = AR.schedule()
-    print(f"PB {d['total_pb']:.2f} m2 / PA {d['total_pa']:.2f} m2 / "
-          f"total {d['total']:.2f} m2 / libre {d['area_libre']:.2f} m2", flush=True)
+    print(
+        f"PB {d['total_pb']:.2f} m2 / PA {d['total_pa']:.2f} m2 / "
+        f"total {d['total']:.2f} m2 / libre {d['area_libre']:.2f} m2",
+        flush=True,
+    )
     print("Guardado:", OUT, flush=True)
     return 0
 

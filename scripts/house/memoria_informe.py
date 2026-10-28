@@ -258,13 +258,11 @@ def main() -> int:
 
     add_par(doc, "5. Especificaciones técnicas", "Heading 3")
     for t in (
-        "Muros portantes de albañilería de 0.15-0.20 m y mamparas divisorias "
-        "de 0.10 m.",
+        "Muros portantes de albañilería de 0.15-0.20 m y mamparas divisorias de 0.10 m.",
         "Puertas metálicas/madera de 0.70 a 1.20 m y puerta corredera de "
         "2.00 m (bloques A-PUERTA).",
         "Unidades: metros. Cotas en metros con dos decimales.",
-        "Escalas de láminas: 1:100 (plantas A4), 1:125 (presentación A3 y "
-        "catálogo de bloques).",
+        "Escalas de láminas: 1:100 (plantas A4), 1:125 (presentación A3 y catálogo de bloques).",
     ):
         add_par(doc, t, "List Paragraph")
 
@@ -274,8 +272,7 @@ def main() -> int:
         "solicitada, con 257.60 m2 techados en dos niveles.",
         "El área libre (30.0%) cumple el mínimo; se recomienda no aumentar la "
         "huella edificada para conservar margen.",
-        "Las láminas A4/A3 quedan listas para completar los MVIEW y el "
-        "trazado final.",
+        "Las láminas A4/A3 quedan listas para completar los MVIEW y el trazado final.",
     ):
         add_par(doc, t, "List Paragraph")
 

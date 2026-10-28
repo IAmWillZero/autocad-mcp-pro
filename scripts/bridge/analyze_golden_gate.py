@@ -86,7 +86,7 @@ def _write_report(
 
     text = f"""# Golden Gate - analisis estructural 2D
 
-Generado: {time.strftime('%Y-%m-%d %H:%M:%S')} en {elapsed:.1f} s
+Generado: {time.strftime("%Y-%m-%d %H:%M:%S")} en {elapsed:.1f} s
 
 Modelo de barras en el plano longitudinal X-Y (unidades kN y m, carga vertical
 positiva hacia abajo). No requiere AutoCAD; el ``.ftl`` se abre en FTOOL.
@@ -95,37 +95,37 @@ positiva hacia abajo). No requiere AutoCAD; el ``.ftl`` se abre en FTOOL.
 
 | Dato | Valor |
 |---|---|
-| Nudos | {info['nodes']} |
-| Barras | {info['members']} |
-| Cables | {info['members_by_group'].get('cable', 0)} |
-| Suspensores | {info['members_by_group'].get('hanger', 0)} |
-| Tablero | {info['members_by_group'].get('deck', 0)} |
-| Torres | {info['members_by_group'].get('tower', 0)} |
-| Material | {info['material']} (E = 2.0e8 kN/m2, rho = 78.5 kN/m3) |
-| Secciones | {', '.join(info['sections'])} |
-| Luz principal | {_num(meta.get('main_span', 0), 0)} m |
-| Vanos laterales | {_num(meta.get('side_span', 0), 0)} m |
-| Altura de torres | {_num(meta.get('tower_y', 0), 0)} m |
-| Calado del tablero | {_num(meta.get('deck_y', 0), 0)} m |
-| Flecha del cable | {_num(meta.get('sag', 0), 0)} m |
-| Flecha del vano lateral | {_num(meta.get('side_sag', 0), 3)} m |
-| Separacion de suspensores | {_num(meta.get('hanger_spacing', 0), 3)} m |
-| Anclajes | x = +/-{_num(meta.get('pier_x', 0), 0)} m, al nivel del tablero y {_num(meta.get('anchor_offset', 0) * 1000, 0)} mm fuera del apoyo |
-| Aproximaciones | {meta.get('approach_piers', 0)} pilas cada {_num(meta.get('approach_spacing', 0), 1)} m hasta los estribos |
+| Nudos | {info["nodes"]} |
+| Barras | {info["members"]} |
+| Cables | {info["members_by_group"].get("cable", 0)} |
+| Suspensores | {info["members_by_group"].get("hanger", 0)} |
+| Tablero | {info["members_by_group"].get("deck", 0)} |
+| Torres | {info["members_by_group"].get("tower", 0)} |
+| Material | {info["material"]} (E = 2.0e8 kN/m2, rho = 78.5 kN/m3) |
+| Secciones | {", ".join(info["sections"])} |
+| Luz principal | {_num(meta.get("main_span", 0), 0)} m |
+| Vanos laterales | {_num(meta.get("side_span", 0), 0)} m |
+| Altura de torres | {_num(meta.get("tower_y", 0), 0)} m |
+| Calado del tablero | {_num(meta.get("deck_y", 0), 0)} m |
+| Flecha del cable | {_num(meta.get("sag", 0), 0)} m |
+| Flecha del vano lateral | {_num(meta.get("side_sag", 0), 3)} m |
+| Separacion de suspensores | {_num(meta.get("hanger_spacing", 0), 3)} m |
+| Anclajes | x = +/-{_num(meta.get("pier_x", 0), 0)} m, al nivel del tablero y {_num(meta.get("anchor_offset", 0) * 1000, 0)} mm fuera del apoyo |
+| Aproximaciones | {meta.get("approach_piers", 0)} pilas cada {_num(meta.get("approach_spacing", 0), 1)} m hasta los estribos |
 
 ## Estado de peso propio (referencia)
 
 | Magnitud | Valor |
 |---|---:|
-| Flecha maxima del tablero | {_num(dead['max_deck_deflection'], 3)} m |
-| Axil maximo de cable | {_num(dead['cable_tension_max'], 0)} kN |
-| Axil minimo de cable | {_num(dead['cable_tension_min'], 0)} kN |
-| Axil maximo de suspensor | {_num(dead['hanger_tension_max'], 0)} kN |
-| Suspensores destensados | {dead['slack_hangers']} de {dead['hangers']} |
-| Deriva maxima de torre | {_num(dead['tower_drift_max'], 4)} m |
-| Momento en base de torre | {_num(dead['tower_base_moment_max'], 0)} kN*m |
-| Error relativo de equilibrio (fy) | {dead['equilibrium']['relative_error_fy']:.2e} |
-| Error relativo de equilibrio (mz) | {dead['equilibrium']['relative_error_mz']:.2e} |
+| Flecha maxima del tablero | {_num(dead["max_deck_deflection"], 3)} m |
+| Axil maximo de cable | {_num(dead["cable_tension_max"], 0)} kN |
+| Axil minimo de cable | {_num(dead["cable_tension_min"], 0)} kN |
+| Axil maximo de suspensor | {_num(dead["hanger_tension_max"], 0)} kN |
+| Suspensores destensados | {dead["slack_hangers"]} de {dead["hangers"]} |
+| Deriva maxima de torre | {_num(dead["tower_drift_max"], 4)} m |
+| Momento en base de torre | {_num(dead["tower_base_moment_max"], 0)} kN*m |
+| Error relativo de equilibrio (fy) | {dead["equilibrium"]["relative_error_fy"]:.2e} |
+| Error relativo de equilibrio (mz) | {dead["equilibrium"]["relative_error_mz"]:.2e} |
 
 El peso propio se resuelve como estado de referencia: los axiles iniciales de
 cables y suspensores entran como cargas nodales equivalentes, de modo que la
@@ -133,23 +133,23 @@ solucion es el incremento respecto de ese estado.
 
 ## Carga puntual en el centro del vano principal
 
-Carga aplicada: **{_num(live['load']['magnitude'], 0)} kN** en x = {_num(live['load']['x'], 2)} m
-(nudo {live['load']['node']}).
+Carga aplicada: **{_num(live["load"]["magnitude"], 0)} kN** en x = {_num(live["load"]["x"], 2)} m
+(nudo {live["load"]["node"]}).
 
 | Magnitud | Incremento | Total (peso propio + carga) |
 |---|---:|---:|
-| Flecha maxima del tablero | {_num(live['max_deck_deflection'], 3)} m | {_num(dead['max_deck_deflection'] + live['max_deck_deflection'], 3)} m |
-| Axil maximo de cable | {_num(live['cable_tension_max'], 0)} kN | {_num(combined['cable_tension_max'], 0)} kN |
-| Axil maximo de suspensor | {_num(live['hanger_tension_max'], 0)} kN | {_num(combined['hanger_tension_max'], 0)} kN |
-| Momento maximo positivo del tablero | {_num(live['deck_moment_max_sagging'], 0)} kN*m | {_num(combined['deck_moment_max_sagging'], 0)} kN*m |
-| Momento maximo negativo del tablero | {_num(live['deck_moment_max_hogging'], 0)} kN*m | {_num(combined['deck_moment_max_hogging'], 0)} kN*m |
-| Deriva de torre | {_num(live['tower_drift_max'], 4)} m | - |
-| Suspensores destensados | {live['slack_hangers']} | - |
+| Flecha maxima del tablero | {_num(live["max_deck_deflection"], 3)} m | {_num(dead["max_deck_deflection"] + live["max_deck_deflection"], 3)} m |
+| Axil maximo de cable | {_num(live["cable_tension_max"], 0)} kN | {_num(combined["cable_tension_max"], 0)} kN |
+| Axil maximo de suspensor | {_num(live["hanger_tension_max"], 0)} kN | {_num(combined["hanger_tension_max"], 0)} kN |
+| Momento maximo positivo del tablero | {_num(live["deck_moment_max_sagging"], 0)} kN*m | {_num(combined["deck_moment_max_sagging"], 0)} kN*m |
+| Momento maximo negativo del tablero | {_num(live["deck_moment_max_hogging"], 0)} kN*m | {_num(combined["deck_moment_max_hogging"], 0)} kN*m |
+| Deriva de torre | {_num(live["tower_drift_max"], 4)} m | - |
+| Suspensores destensados | {live["slack_hangers"]} | - |
 
 Equilibrio global del caso puntual: reaccion vertical total
-**{_num(live['equilibrium']['reactions'][1], 0)} kN** frente a
-**{_num(-live['equilibrium']['applied'][1], 0)} kN** aplicados; error relativo
-fy = {equilibrium['relative_error_fy']:.2e}, mz = {equilibrium['relative_error_mz']:.2e}.
+**{_num(live["equilibrium"]["reactions"][1], 0)} kN** frente a
+**{_num(-live["equilibrium"]["applied"][1], 0)} kN** aplicados; error relativo
+fy = {equilibrium["relative_error_fy"]:.2e}, mz = {equilibrium["relative_error_mz"]:.2e}.
 
 ## Reacciones verticales por apoyo (kN)
 
@@ -172,11 +172,11 @@ valor maximo de flecha se alcanza entre el centro y los cuartos del vano.
 
 ## Exportacion a FTOOL
 
-- Archivo: `{ftl['path']}`
+- Archivo: `{ftl["path"]}`
 - Formato: FTL 4.01
-- Ida y vuelta verificada: {'OK' if ftl['verified']['ok'] else 'FALLO'}
-- Nudos/barras reimportados: {ftl['verified']['nodes']} / {ftl['verified']['members']}
-- Lineas: {ftl['lines']}
+- Ida y vuelta verificada: {"OK" if ftl["verified"]["ok"] else "FALLO"}
+- Nudos/barras reimportados: {ftl["verified"]["nodes"]} / {ftl["verified"]["members"]}
+- Lineas: {ftl["lines"]}
 
 FTOOL no guarda resultados en el ``.ftl``: hay que abrirlo y ejecutar ``Solve``.
 La edicion estandar admite un solo caso de carga, por eso el archivo se exporta
@@ -195,8 +195,8 @@ Referencias: {FTOOL_FORMAT} - {FTOOL_MANUAL}
 
 ## Archivos
 
-- FTL: `{ftl['path']}`
-- JSON: `{path.with_suffix('.json')}`
+- FTL: `{ftl["path"]}`
+- JSON: `{path.with_suffix(".json")}`
 - Informe: `{path}`
 """
     path.write_text(text, encoding="utf-8")
@@ -218,8 +218,7 @@ def run(
 
     model = build_suspension_model(preset)
     print(
-        f"modelo: {len(model.nodes)} nudos, {len(model.members)} barras "
-        f"(preset {preset})",
+        f"modelo: {len(model.nodes)} nudos, {len(model.members)} barras (preset {preset})",
         flush=True,
     )
 
@@ -279,7 +278,10 @@ def run(
     ftl_path = out_dir / "Golden-Gate-modelo-2D.ftl"
     ftl_path.write_text(model_to_ftl(ftl_model), encoding="utf-8", newline="\n")
     verification = verify_ftl(ftl_model)
-    print(f"FTL: {ftl_path} ({ftl_path.stat().st_size:,} bytes) verificacion {verification['ok']}", flush=True)
+    print(
+        f"FTL: {ftl_path} ({ftl_path.stat().st_size:,} bytes) verificacion {verification['ok']}",
+        flush=True,
+    )
 
     elapsed = time.perf_counter() - started
     report_path = out_dir / "Golden-Gate-Analisis.md"

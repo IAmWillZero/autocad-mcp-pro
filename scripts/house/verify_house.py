@@ -47,8 +47,14 @@ def main() -> int:
     print("BlockRefs:", blocks)
     print("BBox: min", round(minx, 3), round(miny, 3), " max", round(maxx, 3), round(maxy, 3))
     print("Layouts:", [str(doc.Layouts.Item(i).Name) for i in range(doc.Layouts.Count)])
-    print("Bloques:", [str(doc.Blocks.Item(i).Name) for i in range(doc.Blocks.Count)
-                       if not str(doc.Blocks.Item(i).Name).startswith("*")])
+    print(
+        "Bloques:",
+        [
+            str(doc.Blocks.Item(i).Name)
+            for i in range(doc.Blocks.Count)
+            if not str(doc.Blocks.Item(i).Name).startswith("*")
+        ],
+    )
     return 0
 
 
