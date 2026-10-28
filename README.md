@@ -96,6 +96,9 @@ Si no quieres sorpresas, enfoca el dibujo correcto antes de conectar, o cierra l
 | Tablas | `create_table` (tabla nativa `AcDbTable`: cuadro de áreas, leyendas y rótulos; ancho por columna con `col_widths`). Editable y exportable a Excel; su alto/ancho de fila siguen el **estilo de tabla** del dibujo |
 | Layouts | `list_layouts`, `create_layout`, `set_active_layout`, `create_viewport` (escala 1:50 → `0.02`), `set_plot_style_table` (`acad.ctb`…) |
 | Geometría | `create_line`, `create_circle`, `create_rectangle` (polilínea cerrada), `create_polyline`, `create_text`, `create_arc` |
+| Modelado 3D | `create_box_solid`, `create_box_between`, `create_cylinder_solid`, `create_cylinder_between`, `create_sphere_solid`, `extrude_polygon`, `boolean_solids`, `move_solid`, `rotate_solid`, `scale_solid`, `copy_solid`, `array_solids`, `get_solid_info` (sólidos `AcDb3dSolid`, volumen y extents) |
+| Puentes | `create_bridge` (tipologías `girder`/`arch`/`cable_stayed`/`suspension`, preset `golden_gate` con dimensiones reales), `create_cable` (catenaria con flecha), `list_bridge_presets` |
+| Análisis 2D | `get_ftool_status`, `export_ftool_model` (`.ftl` 4.01 verificado por ida y vuelta), `analyze_bridge_load` (reacciones, flechas y axiles con carga puntual) |
 | Capas | `create_or_get_layer`, `set_current_layer` |
 | Borrado | `delete_entity_by_handle`, `delete_entities_by_handles`, `delete_entities_by_type`, `delete_entities_by_layer`, `delete_entities_by_color`, `delete_entities_by_type_and_color`, `delete_last_entities`, `delete_all_entities` (+ purge) |
 | Edición | `change_entity_color`, `undo_last_operation`, `zoom_extents` |
@@ -117,6 +120,23 @@ capas `A-` con color, **espesor jerárquico** y tipo de línea, más el estilo d
 | `A-EJES` | gris (9) | 0.13 mm | CENTER |
 | `A-PROYECC` | rojo (1) | 0.13 mm | HIDDEN |
 | `A-TEXTOS` | amarillo (2) | 0.13 mm | Continua |
+
+Las **obras de arte** (puentes) usan la disciplina `S-` (Estructuras):
+
+| Capa | Color | Espesor | Uso |
+|---|---|---|---|
+| `S-TABLERO` | cian (4) | 0.35 mm | Losa y superficie de rodadura |
+| `S-VIGAS` | azul (5) | 0.25 mm | Vigas, diafragmas y barreras |
+| `S-PILAS` | magenta (6) | 0.50 mm | Pilas, pilotes y cabezales |
+| `S-TORRES` | rojo (1) | 0.50 mm | Torres y pilonos |
+| `S-CABLES` | amarillo (2) | 0.25 mm | Cables principales, suspensores y tirantes |
+| `S-ESTRIBOS` | verde (3) | 0.50 mm | Estribos y bloques de anclaje |
+| `S-ARCO` | naranja (30) | 0.35 mm | Arcos y montantes |
+| `S-PAVIMENTO` | gris (8) | 0.13 mm | Calzada de asfalto y señalización |
+| `S-EQUIPAMIENTO` | cian (4) | 0.18 mm | Barandillas, farolas y juntas de dilatación |
+| `S-PLACAS` | gris claro (9) | 0.18 mm | Vigas I, placas de nudo/empalme y apoyos |
+| `S-RIGIDIZADORES` | gris (8) | 0.18 mm | Rigidizadores, diafragmas y cartelas |
+| `S-PERNOS` | blanco (7) | 0.13 mm | Pernos, rivets y pasadores |
 
 Todo se dibuja **1:1** en Model con medidas reales; las entidades nuevas quedan **ByLayer**.
 
@@ -142,6 +162,184 @@ El dibujo se hace **1:1 en Model**; la presentación va en **Layouts (espacio pa
 > asigna el estilo de trazado y fija los **espesores de línea por capa** (que es lo que el `.CTB`
 > usa por defecto con `UseObjectLineweight`), pero crear/editar el `.CTB` se hace en AutoCAD
 > (*Page Setup Manager* → *Plot Style Table Editor*).
+
+### Modelado 3D (`S-`)
+
+El modelado se hace con sólidos reales `AcDb3dSolid` a escala 1:1 en metros, no con mallas ni
+caras. Convenciones COM **verificadas en AutoCAD 2026 (25.1)** con *late binding*:
+
+- `AddBox`, `AddCylinder` y `AddSphere` reciben el **centro** de la primitiva (no una esquina).
+- `Boolean` usa `0 = unión`, `1 = intersección`, `2 = resta`; el valor `3` no es válido y los
+  nombres de `AcBoolean` del typelib no coinciden con esos índices.
+- `AddExtrudedSolid` exige un **`AcDbRegion`**, no una polilínea: `extrude_polygon` crea el
+  *region* internamente y lo elimina después.
+- `AddExtrudedSolidAlongPath` falla con trayectorias quebradas (*General modeling failure*), por eso
+  los cables se aproximan con **cilindros entre puntos** (`create_cylinder_between`).
+- `Rotate3D` trabaja en **radianes** (la tool `rotate_solid` recibe grados y convierte).
+
+| Tool | Para qué sirve |
+|---|---|
+| `create_box_solid` | Caja centrada en `center` con `length/width/height` y rotación sobre Z |
+| `create_box_between` | Caja alineada entre dos puntos (diagonales, montantes, segmentos de arco) |
+| `create_cylinder_solid` / `create_cylinder_between` | Pilotes verticales / cables, suspensores y tirantes |
+| `create_sphere_solid` | Nudos y detalles |
+| `extrude_polygon` | Perfiles cerrados (arcos, losas) con ángulo de desmoldeo |
+| `boolean_solids` | Unión, intersección y resta entre sólidos |
+| `move_solid` / `rotate_solid` | Colocar y orientar piezas ya creadas |
+| `scale_solid` | Escala uniforme respecto a un punto base |
+| `copy_solid` / `array_solids` | Copiar un sólido (con giro opcional) o una matriz lineal de copias |
+| `get_solid_info` | Cantidad, volumen total, volumen por capa y *extents* del modelo |
+
+### Puentes (`create_bridge`)
+
+Genera un puente completo combinando los sólidos anteriores: tablero, vigas, pilas, estribos,
+torres, cables y suspensores, cada uno en su capa `S-`.
+
+```jsonc
+// Golden Gate a escala real con detalle metalico completo
+{"preset": "golden_gate", "name": "GOLDEN GATE", "detail": "bolted"}
+
+// Solo vigas I, placas y rigidizadores (sin pernos)
+{"preset": "golden_gate", "detail": "members"}
+
+// Viga-losa genérico de 3 vanos
+{"kind": "girder", "total_length": 120, "deck_width": 10, "clearance": 10, "spans": 3}
+
+// Atirantado con dos pilonos
+{"kind": "cable_stayed", "total_length": 600, "main_span": 400, "tower_height": 120, "pylons": 2}
+```
+
+Tipologías: `girder` (viga-losa), `arch` (arco), `cable_stayed` (atirantado) y `suspension`
+(colgante). Cualquier dimensión del preset se puede sobrescribir con los argumentos de la tool
+(`total_length`, `deck_width`, `deck_depth`, `clearance`, `main_span`, `side_span`,
+`tower_height`, `cable_sag`, `cable_diameter`, `suspender_spacing`, `spans`, `pylons`,
+`arch_rise`, `n_approach_piers`, `origin`).
+
+El detalle metálico es aditivo y se controla con `detail`:
+
+| Valor | Qué añade |
+|---|---|
+| `none` (default) | Modelo estructural base, sin detalle metalico |
+| `members` | Vigas I longitudinales y transversales, placas de nudo y empalme, rigidizadores de torre/pilono, cartelas, apoyos de placa y herrajes de cable (abrazaderas, sockets y pasadores) |
+| `bolted` | Todo lo anterior más pernos/rivets en empalmes, apoyos, anclajes y abrazaderas, hasta `max_fasteners` (default 1200) |
+
+Los pernos se generan como cilindros cortos en `S-PERNOS`; el tope `max_fasteners` evita que un
+modelo grande sature el dibujo y el resultado informa cuántos se crearon realmente (`fasteners`).
+
+El preset **`golden_gate`** usa las dimensiones públicas del Golden Gate Bridge:
+
+| Dato | Valor |
+|---|---|
+| Longitud total | 2737 m |
+| Luz principal | 1280 m |
+| Vanos laterales | 343 m cada uno |
+| Altura de torres | 227 m sobre el agua |
+| Calado del tablero | 67 m |
+| Ancho de tablero | 27.4 m |
+| Canto del tablero | 7.6 m |
+| Flecha del cable | 143 m |
+| Diámetro del cable | 0.92 m |
+| Separación de suspensores | 15.24 m |
+
+El modelo incluye tablero con calzada de asfalto, mediana, aceras y señalización; cercha Warren con
+vigas transversales y arriostramiento inferior en X; barandillas y farolas; torres con remates y
+monturas de cable; suspensores dobles con abrazaderas; diques de protección (fenders); estribos
+escalonados con bloques de anclaje; juntas de dilatación y el arco Fort Point. Con
+`detail="bolted"` se añaden 8 vigas I de piso, vigas transversales, placas de empalme en los
+cordones, rigidizadores en las torres, apoyos de acero, zapatas de anclaje de cable, sockets y
+pasadores en cada suspensor, y una matriz de pernos/rivets en las conexiones. El resultado añade
+**desglose por material** (hormigón 2400 kg/m³, acero 7850, asfalto 2400) con masa en toneladas.
+
+Para construirlo en un dibujo nuevo, guardarlo y trazarlo:
+
+```bash
+python scripts/bridge/build_golden_gate.py                    # Golden Gate + DWG/PDF/JSON/MD
+python scripts/bridge/build_golden_gate.py --detail members  # sin pernos
+python scripts/bridge/build_golden_gate.py --max-fasteners 600
+python scripts/bridge/build_golden_gate.py --smoke            # puente viga-losa de prueba
+python scripts/bridge/build_golden_gate.py --out C:\salida    # otra carpeta
+python scripts/bridge/build_golden_gate.py --no-plot          # sin PDF
+python scripts/bridge/build_golden_gate.py --no-verify        # sin verificación
+```
+
+Los archivos se guardan en `~/Documents/BlancaNieves/salida` (DWG, PDF, JSON y un informe
+`Puente-Golden-Gate.md` con sólidos, volumen, masa, materiales, capas y comprobaciones). La carpeta
+se puede cambiar con `--out` o con la variable de entorno `GOLDEN_GATE_OUT`. Si el PDF está abierto
+en un visor y Windows lo bloquea, se escribe una copia con marca de tiempo
+(`Puente-Golden-Gate-<fecha>.pdf`) y el JSON/MD indican la ruta realmente generada.
+
+### Análisis estructural 2D y FTOOL
+
+El Golden Gate también se resuelve como modelo de barras 2D en el plano longitudinal X-Y, sin
+necesidad de AutoCAD. Incluye tablero continuo, pilas y estribos, torres empotradas en la base,
+cables principales con la flecha real (143 m) y suspensores cada 15.24 m.
+
+| Dato | Valor |
+|---|---|
+| Nudos | 276 |
+| Barras | 401 (130 cable, 142 tablero, 127 suspensores, 2 torres) |
+| Anclajes | extremos de los vanos laterales, `x = ±983 m`, al nivel del tablero y 50 mm fuera del apoyo de pila |
+| Aproximaciones | pilas cada ~64 m hasta los estribos en `x = ±1368.5 m` |
+| Unidades | kN, m, rad; carga vertical positiva hacia abajo |
+
+El **peso propio** se resuelve como estado de referencia: los axiles iniciales de cables
+(`H = W·L / 8f`) y suspensores entran como cargas nodales equivalentes, de modo que el caso de
+carga puntual se resuelve como incremento linealizado sobre ese estado. El solver es de rigidez
+directa con matriz *skyline* LDLᵀ, iteración de **tracción-solo** y rigidez geométrica **P-Δ**.
+
+Los anclajes se sitúan **al nivel del tablero** y 50 mm por fuera del apoyo de pila. El desfase
+evita que FTOOL fusione ambos nudos (su tolerancia es de 1 mm) y perdería el apoyo de rodillo del
+tablero; además mantiene la pendiente del cable decreciente hacia el anclaje. Con los anclajes 2 m
+por debajo del tablero la última barra del cable se hacía convexa y aparecían compresiones falsas
+en los suspensores extremos. Con la geometría actual el estado de peso propio deja **0 suspensores
+destensados** y las 401 barras activas.
+
+| Herramienta | Uso |
+|---|---|
+| `get_ftool_status` | Ruta de FTOOL detectada, carpeta de salida y limitaciones del formato |
+| `export_ftool_model` | Escribe el `.ftl` 4.01 (con `load_x`/`load_kN` opcionales) y verifica la ida y vuelta |
+| `analyze_bridge_load` | Resuelve una carga puntual y devuelve reacciones, flechas y axiles |
+
+```jsonc
+// Carga puntual de 1000 kN en el centro del vano principal
+{"x": 0, "magnitude": 1000}
+
+// Exportar el modelo con la carga incluida
+{"load_x": 0, "load_kN": 1000}
+
+// Guardar el .ftl en otra ruta
+{"path": "C:/salida/Golden-Gate.ftl", "load_kN": 0}
+```
+
+Resultados de referencia con **1000 kN** en el centro:
+
+| Magnitud | Peso propio | Incremento | Total |
+|---|---:|---:|---:|
+| Flecha máxima del tablero | 0.140 m | 0.131 m | 0.271 m |
+| Axil máximo de cable | 487 685 kN | 1 930 kN | 489 615 kN |
+| Axil máximo de suspensor | 3 043 kN | 92 kN | 3 136 kN |
+| Reacción en base de torre | 1 216 236 kN | 3 253 kN | 1 219 489 kN |
+
+El equilibrio global se comprueba con fuerzas y momentos: el error relativo es ~0 en `fy` y
+~2e-6 en `mz`.
+
+El archivo `.ftl` sigue el formato **FTL 4.01** documentado por ingeniería inversa. FTOOL no guarda
+resultados: hay que abrirlo y ejecutar **Solve**. La edición estándar admite **un solo caso de
+carga**, por eso la carga puntual se incluye al exportar. La configuración opcional
+`AUTOCAD_MCP_FTOOL_EXE` y `AUTOCAD_MCP_FTOOL_OUTPUT_DIR` permite fijar el ejecutable y la carpeta
+de salida.
+
+```bash
+# Modelo 2D + .ftl + JSON + informe en ~/Documents/BlancaNieves/salida
+python scripts/bridge/analyze_golden_gate.py
+
+# Barrido de posiciones de la carga
+python scripts/bridge/analyze_golden_gate.py --load 2000 --sweep 0 320 640 960
+```
+
+Limitaciones: FTOOL resuelve elasticidad lineal **sin** rigidez geométrica, por lo que sus flechas
+difieren de las del solver interno; los cables y suspensores se exportan como barras articuladas
+(`truss`) y las torres/tablero como pórticos.
 
 ---
 
@@ -172,6 +370,14 @@ El dibujo se hace **1:1 en Model**; la presentación va en **Layouts (espacio pa
   `create_dimension` (cotas) y `list_blocks`/`insert_block`/`explode_entities` (bloques). Ver
   *Estándar de dibujo* arriba.
 - **`delete_all_entities` purga el dibujo** (bloques/capas/estilos huérfanos) tras borrar.
+- **Modelado 3D real (`AcDb3dSolid`)**: 13 tools (cajas, cilindros, esferas, extrusión de regiones,
+  booleanos, mover/rotar/escalar, copiar/array y `get_solid_info`), **`create_bridge`** con 4
+  tipologías y el preset `golden_gate` a escala real (2737 m, torres 227 m), `create_cable` con
+  flecha parabólica y `list_bridge_presets`. Ver *Modelado 3D* arriba.
+- **Análisis estructural 2D y FTOOL** (3 tools): `get_ftool_status`, `export_ftool_model` (`.ftl`
+  4.01 verificado por ida y vuelta) y `analyze_bridge_load` (reacciones, flechas, axiles y equilibrio
+  con carga puntual). Incluye un solver propio con tracción-solo y P-Δ. Ver *Análisis estructural 2D
+  y FTOOL* arriba.
 - **Compatible con el SDK `mcp` v2** (handlers `on_list_tools`/`on_call_tool` en el constructor;
   `input_schema` en snake_case). Requiere `mcp>=2,<3`.
 - **Logs a `stderr`:** por stdio, `stdout` es exclusivo del protocolo JSON-RPC; escribir logs ahí
@@ -186,6 +392,12 @@ El dibujo se hace **1:1 en Model**; la presentación va en **Layouts (espacio pa
 - **Sin AutoCAD** (CI): `ruff check`, `mypy`, `pytest`.
 - **Con AutoCAD abierto** (manual): `python tests/smoke_test.py` crea entidades, las lee de vuelta
   con `get_entities` y reporta `PASS/FAIL` por caso.
+- **Puente real** (manual): `python scripts/bridge/build_golden_gate.py` genera el Golden Gate en un
+  dibujo nuevo, ejecuta una **verificación automática** de cotas, torres, suspensores y materiales, y
+  guarda DWG, PDF, JSON y el informe `Puente-Golden-Gate.md`.
+- **Análisis 2D** (sin AutoCAD): `python scripts/bridge/analyze_golden_gate.py` resuelve el modelo de
+  barras, verifica el equilibrio global y el `.ftl`, y guarda el archivo de FTOOL, un JSON y el
+  informe `Golden-Gate-Analisis.md`.
 
 ```bash
 ruff check .

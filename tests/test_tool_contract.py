@@ -52,6 +52,28 @@ EXPECTED_TOOLS = {
     "clear_cache",
     "reload_config",
     "batch_execute",
+    # 3D / puentes
+    "create_box_solid",
+    "create_box_between",
+    "create_cylinder_solid",
+    "create_cylinder_between",
+    "create_sphere_solid",
+    "extrude_polygon",
+    "boolean_solids",
+    "move_solid",
+    "rotate_solid",
+    "scale_solid",
+    "copy_solid",
+    "array_solids",
+    "get_solid_info",
+    "create_bridge",
+    "create_cable",
+    "list_bridge_presets",
+    "get_ftool_status",
+    "export_ftool_model",
+    "analyze_bridge_load",
+    # detalles metalicos
+    "create_detail_sheet",
 }
 
 

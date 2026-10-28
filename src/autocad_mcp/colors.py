@@ -14,6 +14,7 @@ ACI_COLORS: dict[str, int] = {
     "grey": 8,
     "light_gray": 9,
     "light_grey": 9,
+    "orange": 30,
     "black": 0,
     "bylayer": 256,
     "byblock": 0,

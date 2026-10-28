@@ -189,3 +189,65 @@ def test_model_space_retries_when_busy(quiet_sleep: None) -> None:
     conn.doc = doc
     assert conn.model_space() is doc.space
     assert doc.calls == 4
+
+
+class _SlowNameDoc:
+    """Documento recien agregado cuyo ``Name`` tarda en resolver."""
+
+    def __init__(self, name: str, failures: int = 0) -> None:
+        self._name = name
+        self._failures = failures
+
+    @property
+    def Name(self) -> str:
+        if self._failures > 0:
+            self._failures -= 1
+            raise RuntimeError("Add.Name")
+        return self._name
+
+
+class _SlowDocs:
+    def __init__(self, doc: Any) -> None:
+        self._doc = doc
+        self.added = 0
+
+    def Add(self) -> Any:
+        self.added += 1
+        return self._doc
+
+
+def test_new_document_retries_name_when_add_is_not_ready(
+    monkeypatch: pytest.MonkeyPatch, quiet_sleep: None
+) -> None:
+    new = _SlowNameDoc("Drawing7.dwg", failures=3)
+    app = _FakeApp(_FakeDoc("Drawing5.dwg"))
+    app.Documents = _SlowDocs(new)  # type: ignore[assignment]
+    _patch(monkeypatch, app)
+
+    conn = AutoCADConnection()
+    conn.app = app
+    conn.connected = True
+    conn.doc = _FakeDoc("Drawing5.dwg")
+
+    assert conn.new_document() is True
+    assert conn.doc is new
+    assert conn._doc_name == "Drawing7.dwg"
+
+
+def test_new_document_falls_back_to_active_document(
+    monkeypatch: pytest.MonkeyPatch, quiet_sleep: None
+) -> None:
+    new = _SlowNameDoc("Drawing7.dwg", failures=10_000)
+    active = _FakeDoc("Drawing7.dwg")
+    app = _FakeApp(active)
+    app.Documents = _SlowDocs(new)  # type: ignore[assignment]
+    _patch(monkeypatch, app)
+
+    conn = AutoCADConnection()
+    conn.app = app
+    conn.connected = True
+    conn.doc = _FakeDoc("Drawing5.dwg")
+
+    assert conn.new_document() is True
+    assert conn.doc is active
+    assert conn._doc_name == "Drawing7.dwg"

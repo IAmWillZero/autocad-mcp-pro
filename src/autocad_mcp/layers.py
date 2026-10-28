@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from autocad_mcp.colors import color_index
 from autocad_mcp.connection import AutoCADConnection
 
@@ -35,6 +37,117 @@ STRUCTURE_LAYERS: dict[str, dict[str, str]] = {
         "name": "I-ELECTR",
         "color": "red",
         "description": "Lineas y equipos de servicio",
+    },
+}
+
+# Capas de obras de arte / puentes (disciplina S- Estructuras).
+BRIDGE_LAYERS: dict[str, dict[str, str]] = {
+    "deck": {"name": "S-TABLERO", "color": "cyan", "description": "Tablero / losa"},
+    "girder": {"name": "S-VIGAS", "color": "blue", "description": "Vigas y diafragmas"},
+    "pier": {"name": "S-PILAS", "color": "magenta", "description": "Pilas y pilotes"},
+    "tower": {"name": "S-TORRES", "color": "red", "description": "Torres y pilonos"},
+    "cable": {"name": "S-CABLES", "color": "yellow", "description": "Cables y tirantes"},
+    "abutment": {"name": "S-ESTRIBOS", "color": "green", "description": "Estribos y anclajes"},
+    "arch": {"name": "S-ARCO", "color": "orange", "description": "Arcos y montantes"},
+    "pavement": {
+        "name": "S-PAVIMENTO",
+        "color": "gray",
+        "description": "Calzada, asfalto y senalizacion",
+    },
+    "equipment": {
+        "name": "S-EQUIPAMIENTO",
+        "color": "cyan",
+        "description": "Barandillas, farolas y juntas",
+    },
+    "plate": {
+        "name": "S-PLACAS",
+        "color": "light_gray",
+        "description": "Placas de nudo, empalmes y apoyos",
+    },
+    "stiffener": {
+        "name": "S-RIGIDIZADORES",
+        "color": "gray",
+        "description": "Rigidizadores, diafragmas y cartelas",
+    },
+    "fastener": {
+        "name": "S-PERNOS",
+        "color": "white",
+        "description": "Pernos, rivets y pasadores",
+    },
+}
+
+# Capas de laminas de detalle (disciplina D- Detalles).
+# ``lineweight`` va en centesimas de milimetro; ``linetype`` se carga si hace falta.
+DETAIL_LAYERS: dict[str, dict[str, Any]] = {
+    "cut": {
+        "name": "D-CORTE",
+        "color": "white",
+        "lineweight": 35,
+        "linetype": "Continuous",
+        "description": "Contornos cortados de piezas metalicas",
+    },
+    "view": {
+        "name": "D-VISTA",
+        "color": "white",
+        "lineweight": 25,
+        "linetype": "Continuous",
+        "description": "Aristas visibles y contornos de vista",
+    },
+    "hidden": {
+        "name": "D-OCULTO",
+        "color": "light_gray",
+        "lineweight": 13,
+        "linetype": "HIDDEN",
+        "description": "Aristas ocultas y taladros no vistos",
+    },
+    "axis": {
+        "name": "D-EJES",
+        "color": "light_gray",
+        "lineweight": 13,
+        "linetype": "CENTER",
+        "description": "Ejes y lineas de centro",
+    },
+    "dim": {
+        "name": "D-COTAS",
+        "color": "green",
+        "lineweight": 13,
+        "linetype": "Continuous",
+        "description": "Cotas y lineas de dimension",
+    },
+    "text": {
+        "name": "D-TEXTOS",
+        "color": "white",
+        "lineweight": 18,
+        "linetype": "Continuous",
+        "description": "Rotulos, notas y llamadas",
+    },
+    "title": {
+        "name": "D-TITULOS",
+        "color": "yellow",
+        "lineweight": 25,
+        "linetype": "Continuous",
+        "description": "Titulos de detalle y rotulo de lamina",
+    },
+    "frame": {
+        "name": "D-MARCOS",
+        "color": "gray",
+        "lineweight": 25,
+        "linetype": "Continuous",
+        "description": "Marcos, retícula y cuadros de lamina",
+    },
+    "fill": {
+        "name": "D-RELLENO",
+        "color": "light_gray",
+        "lineweight": 9,
+        "linetype": "Continuous",
+        "description": "Achurados de seccion",
+    },
+    "symbol": {
+        "name": "D-SIMBOLOS",
+        "color": "cyan",
+        "lineweight": 18,
+        "linetype": "Continuous",
+        "description": "Simbolos de soldadura, llamadas y marcas",
     },
 }
 
@@ -132,12 +245,12 @@ class LayerTools:
 
     def ensure_structure_layers(self) -> None:
         """Crea todas las capas predefinidas si no existen."""
-        for info in STRUCTURE_LAYERS.values():
+        for info in (*STRUCTURE_LAYERS.values(), *BRIDGE_LAYERS.values()):
             self.create_or_get_layer(info["name"], info["color"], info["description"])
 
     def layer_color(self, layer_name: str) -> str | None:
         """Color configurado para una capa predefinida."""
-        for info in STRUCTURE_LAYERS.values():
+        for info in (*STRUCTURE_LAYERS.values(), *BRIDGE_LAYERS.values()):
             if info["name"] == layer_name:
                 return info["color"]
         return None

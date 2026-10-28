@@ -7,14 +7,18 @@ from autocad_mcp.config import AutoCADMCPConfig, get_config
 from autocad_mcp.connection import AutoCADConnection
 from autocad_mcp.features.analysis import AnalysisTools
 from autocad_mcp.features.blocks import BlockTools
+from autocad_mcp.features.bridges import BridgeTools
 from autocad_mcp.features.delete import DeleteTools
+from autocad_mcp.features.detail_sheet import DetailSheetTools
 from autocad_mcp.features.dimensions import DimensionTools
 from autocad_mcp.features.documents import DocumentTools
+from autocad_mcp.features.ftool import FToolTools
 from autocad_mcp.features.geometry import GeometryTools
 from autocad_mcp.features.grid import GridTools
 from autocad_mcp.features.info import InfoTools
 from autocad_mcp.features.layouts import LayoutTools
 from autocad_mcp.features.ops import BatchTool, OpsTools
+from autocad_mcp.features.solids import SolidTools
 from autocad_mcp.features.standards import StandardsTools
 from autocad_mcp.features.structures import StructureTools
 from autocad_mcp.features.tables import TableTools
@@ -41,9 +45,13 @@ class AutoCADService:
         self.standards = StandardsTools(self.conn, self.cache)
         self.grid = GridTools(self.conn, self.cache)
         self.blocks = BlockTools(self.conn, self.cache)
+        self.detail_sheet = DetailSheetTools(self.conn, self.cache)
         self.dimensions = DimensionTools(self.conn, self.cache)
         self.layouts = LayoutTools(self.conn, self.cache)
         self.tables = TableTools(self.conn, self.cache)
+        self.solids = SolidTools(self.conn, self.cache, self.layer_tools)
+        self.bridges = BridgeTools(self.conn, self.cache, self.solids)
+        self.ftool = FToolTools(self.config)
 
         batch_tools: dict[str, BatchTool] = {
             "create_line": self.geometry.create_line,

@@ -34,6 +34,16 @@ STANDARD_LAYERS: dict[str, LayerSpec] = {
     "A-EJES": LayerSpec(9, 13, "CENTER", "Ejes estructurales (raya-punto)"),
     "A-PROYECC": LayerSpec(1, 13, "HIDDEN", "Volados, vacios, losas superiores"),
     "A-TEXTOS": LayerSpec(2, 13, "Continuous", "Rotulos y textos generales"),
+    # Obras de arte (puentes): disciplina S- Estructuras.
+    "S-TABLERO": LayerSpec(4, 35, "Continuous", "Tablero / losa del puente"),
+    "S-VIGAS": LayerSpec(5, 25, "Continuous", "Vigas y diafragmas"),
+    "S-PILAS": LayerSpec(6, 50, "Continuous", "Pilas y pilotes"),
+    "S-TORRES": LayerSpec(1, 50, "Continuous", "Torres y pilonos"),
+    "S-CABLES": LayerSpec(2, 25, "Continuous", "Cables y tirantes"),
+    "S-ESTRIBOS": LayerSpec(3, 50, "Continuous", "Estribos y anclajes"),
+    "S-ARCO": LayerSpec(30, 35, "Continuous", "Arcos y montantes"),
+    "S-PAVIMENTO": LayerSpec(8, 13, "Continuous", "Calzada, asfalto y senalizacion"),
+    "S-EQUIPAMIENTO": LayerSpec(4, 18, "Continuous", "Barandillas, farolas y juntas"),
 }
 
 # Estilo de cotas a escala 1:1 en metros (texto/flecha chicos).

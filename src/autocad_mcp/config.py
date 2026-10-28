@@ -26,6 +26,8 @@ class AutoCADMCPConfig(BaseSettings):
     cache_maxsize: int = 128
     log_level: str = "INFO"
     metrics_enabled: bool = True
+    ftool_exe: str = ""
+    ftool_output_dir: str = ""
 
 
 @lru_cache(maxsize=1)

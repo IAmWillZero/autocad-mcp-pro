@@ -167,6 +167,38 @@ class AutoCADConnection:
             self._reactivate_bound_document(bound)
             return True
 
+    def new_document(self, template: str = "") -> bool:
+        """Crea un dibujo nuevo y engancha la sesion a el.
+
+        ``Documents.Add`` devuelve un IDispatch que puede tardar en resolver
+        ``Name`` (sobre todo si se acaba de cerrar otro dibujo). Se reintenta la
+        lectura y, como ultimo recurso, se toma ``ActiveDocument``.
+        """
+        if not self.ensure():
+            return False
+        try:
+            self.doc = self.app.Documents.Add(template) if template else self.app.Documents.Add()
+        except Exception as exc:  # noqa: BLE001
+            log.error("new_document_failed", error=str(exc))
+            return False
+
+        for _ in range(10):
+            try:
+                self._doc_name = str(self.doc.Name)
+                break
+            except Exception:  # noqa: BLE001
+                time.sleep(0.2)
+        else:
+            try:
+                self.doc = self.app.ActiveDocument
+                self._doc_name = str(self.doc.Name)
+            except Exception as exc:  # noqa: BLE001
+                log.error("new_document_failed", error=str(exc))
+                return False
+
+        log.info("new_document_created", document=self._doc_name)
+        return True
+
     def _reactivate_bound_document(self, name: str | None = None) -> None:
         """Tras reconectar, se reengancha al documento con el que inicio la sesion."""
         if name is None:

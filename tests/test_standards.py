@@ -13,7 +13,7 @@ from autocad_mcp.standards import (
 def test_layer_names_use_discipline_prefix() -> None:
     assert STANDARD_LAYERS
     for name in STANDARD_LAYERS:
-        assert name.startswith("A-")
+        assert name.startswith(("A-", "S-")), name
 
 
 def test_lineweights_follow_hierarchy() -> None:

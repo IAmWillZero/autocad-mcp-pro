@@ -477,6 +477,36 @@ def list_tool_schemas() -> list[types.Tool]:
             },
         ),
         types.Tool(
+            name="create_detail_sheet",
+            description=(
+                "Create a reusable metal-detail block library (bolts, nuts, washers, "
+                "IPE/HEB sections, base plates, gussets, elastomeric bearings, cable "
+                "clamps, anchor bolts, splices, stiffeners) and compose a printable "
+                "A1 detail sheet layout with title block and 1:1 viewport."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "layout_name": {
+                        "type": "string",
+                        "description": "Paper-space tab to create/replace",
+                        "default": "DETALLES-ACERO",
+                    },
+                    "origin": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "description": "Model-space grid origin [x, y] in mm (default 20000, 0)",
+                    },
+                    "include_dimensions": {
+                        "type": "boolean",
+                        "description": "Draw associative dimensions around each detail",
+                        "default": True,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
             name="set_plot_style_table",
             description=(
                 "Assign an existing plot style table (.ctb/.stb) to a layout. The file itself "
@@ -935,6 +965,412 @@ def list_tool_schemas() -> list[types.Tool]:
                 "required": ["operations"],
             },
         ),
+        types.Tool(
+            name="create_box_solid",
+            description=(
+                "Crea una caja 3D (AcDb3dSolid) centrada en 'center'. "
+                "Usa create_box_between para cajas rotadas o inclinadas."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "center": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "length": {"type": "number", "description": "Dimension en X (m)"},
+                    "width": {"type": "number", "description": "Dimension en Y (m)"},
+                    "height": {"type": "number", "description": "Dimension en Z (m)"},
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                    "rotation": {
+                        "type": "number",
+                        "description": "Rotacion sobre Z en grados",
+                        "default": 0.0,
+                    },
+                },
+                "required": ["center", "length", "width", "height"],
+            },
+        ),
+        types.Tool(
+            name="create_box_between",
+            description=(
+                "Caja 3D alineada entre dos puntos (diagonales de arriostramiento, "
+                "segmentos de arco, montantes inclinados)."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "start": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "end": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "width": {"type": "number", "description": "Seccion transversal en Y (m)"},
+                    "depth": {"type": "number", "description": "Seccion transversal en Z (m)"},
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["start", "end", "width", "depth"],
+            },
+        ),
+        types.Tool(
+            name="create_cylinder_solid",
+            description="Crea un cilindro 3D vertical (eje +Z) centrado en 'center'",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "center": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "radius": {"type": "number"},
+                    "height": {"type": "number"},
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["center", "radius", "height"],
+            },
+        ),
+        types.Tool(
+            name="create_cylinder_between",
+            description=(
+                "Cilindro 3D entre dos puntos: cables, suspensores, tirantes, barras de celosia."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "start": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "end": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "radius": {"type": "number"},
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["start", "end", "radius"],
+            },
+        ),
+        types.Tool(
+            name="create_sphere_solid",
+            description="Crea una esfera 3D solida",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "center": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "radius": {"type": "number"},
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["center", "radius"],
+            },
+        ),
+        types.Tool(
+            name="extrude_polygon",
+            description=(
+                "Extruye un poligono cerrado (plano XY) en +Z, con angulo de "
+                "desmoldeo opcional. Crea el region internamente."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "points": {
+                        "type": "array",
+                        "items": {
+                            "type": "array",
+                            "items": {"type": "number"},
+                            "minItems": 2,
+                            "maxItems": 2,
+                        },
+                        "minItems": 3,
+                    },
+                    "height": {"type": "number"},
+                    "taper_angle": {
+                        "type": "number",
+                        "description": "Angulo de desmoldeo en grados",
+                        "default": 0.0,
+                    },
+                    "layer": {"type": "string", "default": "S-ESTRUCTURA"},
+                    "color": {"type": "string", "default": "bylayer"},
+                },
+                "required": ["points", "height"],
+            },
+        ),
+        types.Tool(
+            name="boolean_solids",
+            description=(
+                "Union, interseccion o resta entre dos solidos 3D. En la resta, "
+                "el resultado queda en target_handle."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "target_handle": {"type": "string"},
+                    "tool_handle": {"type": "string"},
+                    "operation": {
+                        "type": "string",
+                        "enum": ["union", "intersection", "subtraction"],
+                        "default": "union",
+                    },
+                },
+                "required": ["target_handle", "tool_handle"],
+            },
+        ),
+        types.Tool(
+            name="move_solid",
+            description="Desplaza un solido 3D de base_point a destination",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handle": {"type": "string"},
+                    "base_point": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "destination": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "minItems": 2,
+                    },
+                },
+                "required": ["handle", "base_point", "destination"],
+            },
+        ),
+        types.Tool(
+            name="rotate_solid",
+            description="Rota un solido 3D alrededor de un eje (angulo en grados)",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handle": {"type": "string"},
+                    "axis_point": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "axis_direction": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "minItems": 2,
+                    },
+                    "angle": {"type": "number"},
+                },
+                "required": ["handle", "axis_point", "axis_direction", "angle"],
+            },
+        ),
+        types.Tool(
+            name="copy_solid",
+            description=(
+                "Copia un solido 3D una o varias veces. La primera copia queda en "
+                "'destination' y las siguientes se separan por el mismo vector."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handle": {"type": "string"},
+                    "destination": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "base_point": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "minItems": 2,
+                        "description": "Punto base; por defecto el centro del solido",
+                    },
+                    "count": {"type": "integer", "minimum": 1, "default": 1},
+                    "rotation": {
+                        "type": "number",
+                        "description": "Giro en Z de cada copia (grados)",
+                        "default": 0.0,
+                    },
+                },
+                "required": ["handle", "destination"],
+            },
+        ),
+        types.Tool(
+            name="array_solids",
+            description="Matriz lineal de copias de un solido separadas por 'offset'.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handle": {"type": "string"},
+                    "count": {"type": "integer", "minimum": 1},
+                    "offset": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                },
+                "required": ["handle", "count", "offset"],
+            },
+        ),
+        types.Tool(
+            name="scale_solid",
+            description="Escala uniforme de un solido 3D respecto a un punto base.",
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handle": {"type": "string"},
+                    "base_point": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "factor": {"type": "number", "exclusiveMinimum": 0},
+                },
+                "required": ["handle", "base_point", "factor"],
+            },
+        ),
+        types.Tool(
+            name="get_solid_info",
+            description=(
+                "Resumen de solidos 3D: cantidad, volumen total, volumen por capa "
+                "y extents del modelo."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "handles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Limita el informe a estos handles",
+                    },
+                    "layer": {"type": "string", "description": "Filtra por capa"},
+                    "include_entities": {
+                        "type": "boolean",
+                        "description": "Incluye el detalle por solido",
+                        "default": False,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
+            name="create_bridge",
+            description=(
+                "Genera un puente 3D completo (girder/arch/cable_stayed/suspension). "
+                "Con preset='golden_gate' usa las dimensiones reales del Golden Gate "
+                "(2737 m, luz principal 1280 m, torres 227 m). Con detail='bolted' "
+                "anade vigas I, placas, rigidizadores, apoyos, herrajes y pernos."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "kind": {
+                        "type": "string",
+                        "enum": ["girder", "arch", "cable_stayed", "suspension"],
+                        "default": "girder",
+                    },
+                    "preset": {"type": "string", "enum": ["golden_gate"]},
+                    "name": {"type": "string"},
+                    "origin": {
+                        "type": "array",
+                        "items": {"type": "number"},
+                        "minItems": 2,
+                        "description": "Punto de insercion (centro del puente)",
+                    },
+                    "total_length": {"type": "number"},
+                    "deck_width": {"type": "number"},
+                    "deck_depth": {"type": "number"},
+                    "clearance": {"type": "number", "description": "Cota del tablero"},
+                    "main_span": {"type": "number"},
+                    "side_span": {"type": "number"},
+                    "tower_height": {"type": "number"},
+                    "cable_sag": {"type": "number"},
+                    "cable_diameter": {"type": "number"},
+                    "suspender_spacing": {"type": "number"},
+                    "spans": {"type": "integer", "minimum": 2},
+                    "pylons": {"type": "integer", "minimum": 1},
+                    "arch_rise": {"type": "number"},
+                    "n_approach_piers": {"type": "integer", "minimum": 0},
+                    "detail": {
+                        "type": "string",
+                        "enum": ["none", "members", "bolted"],
+                        "default": "none",
+                        "description": (
+                            "Detalle metalico: none, members (vigas I, placas y "
+                            "rigidizadores) o bolted (anade pernos/rivets)"
+                        ),
+                    },
+                    "max_fasteners": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "default": 1200,
+                        "description": "Tope de pernos/rivets cuando detail='bolted'",
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
+            name="create_cable",
+            description=(
+                "Crea un cable 3D entre dos puntos con flecha parabolica opcional, "
+                "aproximado con cilindros (catenarias, tirantes, suspensores)."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "start": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "end": {"type": "array", "items": {"type": "number"}, "minItems": 2},
+                    "diameter": {"type": "number", "default": 0.12},
+                    "sag": {
+                        "type": "number",
+                        "description": "Flecha maxima hacia abajo en metros",
+                        "default": 0.0,
+                    },
+                    "samples": {"type": "integer", "minimum": 1, "default": 24},
+                    "layer": {"type": "string", "default": "S-CABLES"},
+                },
+                "required": ["start", "end"],
+            },
+        ),
+        types.Tool(
+            name="list_bridge_presets",
+            description="Lista las tipologias de puente y los presets con dimensiones reales.",
+            input_schema={"type": "object", "properties": {}, "required": []},
+        ),
+        types.Tool(
+            name="get_ftool_status",
+            description=(
+                "Estado de FTOOL: ruta ejecutable detectada, carpeta de salida y "
+                "limitaciones del formato .ftl 4.01."
+            ),
+            input_schema={"type": "object", "properties": {}, "required": []},
+        ),
+        types.Tool(
+            name="export_ftool_model",
+            description=(
+                "Exporta el modelo de barras 2D del puente a un archivo .ftl 4.01 de "
+                "FTOOL, con material, secciones, apoyos, cargas y la opcion de incluir "
+                "una carga puntual. Verifica la ida y vuelta del archivo."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "default": "golden_gate"},
+                    "path": {"type": "string", "description": "Ruta destino del .ftl"},
+                    "load_x": {
+                        "type": "number",
+                        "description": "Posicion X de la carga puntual (m, centro = 0)",
+                        "default": 0.0,
+                    },
+                    "load_kN": {
+                        "type": "number",
+                        "description": "Carga puntual vertical en kN (0 = solo peso propio)",
+                        "default": 0.0,
+                    },
+                },
+                "required": [],
+            },
+        ),
+        types.Tool(
+            name="analyze_bridge_load",
+            description=(
+                "Resuelve el puente 2D con una carga puntual y devuelve reacciones, "
+                "flecha maxima, axiles incrementales de cables y suspensores y el "
+                "chequeo de equilibrio. Incluye el estado de peso propio como referencia."
+            ),
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "default": "golden_gate"},
+                    "x": {
+                        "type": "number",
+                        "description": "Posicion X de la carga (m, centro = 0)",
+                        "default": 0.0,
+                    },
+                    "magnitude": {
+                        "type": "number",
+                        "description": "Magnitud de la carga puntual en kN",
+                        "default": 1000.0,
+                    },
+                    "geometric": {
+                        "type": "boolean",
+                        "description": "Incluye rigidez geometrica (P-Delta)",
+                        "default": True,
+                    },
+                    "tension_only": {
+                        "type": "boolean",
+                        "description": "Desactiva cables y suspensores comprimidos",
+                        "default": True,
+                    },
+                },
+                "required": [],
+            },
+        ),
     ]
 
 
@@ -1039,6 +1475,11 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a.get("view_center"),
             a.get("locked", True),
         ),
+        "create_detail_sheet": lambda a: service.detail_sheet.create_detail_sheet(
+            a.get("layout_name", "DETALLES-ACERO"),
+            a.get("origin"),
+            a.get("include_dimensions", True),
+        ),
         "set_plot_style_table": lambda a: service.layouts.set_plot_style_table(
             a["layout_name"], a["table"]
         ),
@@ -1085,6 +1526,125 @@ def build_handlers(service: AutoCADService) -> dict[str, Handler]:
             a["end_angle"],
             a.get("color", "white"),
             a.get("thickness", 0.0),
+        ),
+        # 3D solids
+        "create_box_solid": lambda a: service.solids.create_box_solid(
+            a["center"],
+            a["length"],
+            a["width"],
+            a["height"],
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+            a.get("rotation", 0.0),
+        ),
+        "create_box_between": lambda a: service.solids.create_box_between(
+            a["start"],
+            a["end"],
+            a["width"],
+            a["depth"],
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+        ),
+        "create_cylinder_solid": lambda a: service.solids.create_cylinder_solid(
+            a["center"],
+            a["radius"],
+            a["height"],
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+        ),
+        "create_cylinder_between": lambda a: service.solids.create_cylinder_between(
+            a["start"],
+            a["end"],
+            a["radius"],
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+        ),
+        "create_sphere_solid": lambda a: service.solids.create_sphere_solid(
+            a["center"],
+            a["radius"],
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+        ),
+        "extrude_polygon": lambda a: service.solids.extrude_polygon(
+            a["points"],
+            a["height"],
+            a.get("taper_angle", 0.0),
+            a.get("layer", "S-ESTRUCTURA"),
+            a.get("color", "bylayer"),
+        ),
+        "boolean_solids": lambda a: service.solids.boolean_solids(
+            a["target_handle"],
+            a["tool_handle"],
+            a.get("operation", "union"),
+        ),
+        "move_solid": lambda a: service.solids.move_solid(
+            a["handle"], a["base_point"], a["destination"]
+        ),
+        "rotate_solid": lambda a: service.solids.rotate_solid(
+            a["handle"], a["axis_point"], a["axis_direction"], a["angle"]
+        ),
+        "scale_solid": lambda a: service.solids.scale_solid(
+            a["handle"], a["base_point"], a["factor"]
+        ),
+        "copy_solid": lambda a: service.solids.copy_solid(
+            a["handle"],
+            a["destination"],
+            a.get("base_point"),
+            a.get("count", 1),
+            a.get("rotation", 0.0),
+        ),
+        "array_solids": lambda a: service.solids.array_solids(a["handle"], a["count"], a["offset"]),
+        "get_solid_info": lambda a: service.solids.get_solid_info(
+            a.get("handles"),
+            a.get("layer"),
+            a.get("include_entities", False),
+        ),
+        # bridges
+        "create_bridge": lambda a: service.bridges.create_bridge(
+            a.get("kind"),
+            a.get("preset"),
+            a.get("name"),
+            a.get("origin"),
+            a.get("total_length"),
+            a.get("deck_width"),
+            a.get("deck_depth"),
+            a.get("clearance"),
+            a.get("main_span"),
+            a.get("side_span"),
+            a.get("tower_height"),
+            a.get("cable_sag"),
+            a.get("cable_diameter"),
+            a.get("suspender_spacing"),
+            a.get("spans"),
+            a.get("pylons"),
+            a.get("arch_rise"),
+            a.get("n_approach_piers"),
+            a.get("detail"),
+            a.get("max_fasteners"),
+        ),
+        "create_cable": lambda a: service.bridges.create_cable(
+            a["start"],
+            a["end"],
+            a.get("diameter", 0.12),
+            a.get("sag", 0.0),
+            a.get("samples", 24),
+            a.get("layer"),
+        ),
+        "list_bridge_presets": lambda a: service.bridges.list_bridge_presets(),
+        # ftool (analisis estructural 2D)
+        "get_ftool_status": lambda a: service.ftool.status(),
+        "export_ftool_model": lambda a: service.ftool.export_model(
+            a.get("preset", "golden_gate"),
+            a.get("path"),
+            a.get("load_x", 0.0),
+            a.get("load_kN", 0.0),
+        ),
+        "analyze_bridge_load": lambda a: service.ftool.analyze_load(
+            a.get("preset", "golden_gate"),
+            a.get("x", 0.0),
+            a.get("magnitude", 1000.0),
+            a.get("geometric", True),
+            a.get("tension_only", True),
         ),
         # delete
         "delete_entity_by_handle": lambda a: service.deleter.delete_entity_by_handle(a["handle"]),
